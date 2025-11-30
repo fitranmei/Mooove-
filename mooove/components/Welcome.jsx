@@ -54,10 +54,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 40,
+    marginHorizontal: 30,
     marginTop: 10,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 50,
   },
   textButton: {
     fontFamily: 'PlusJakartaSans_700Bold',
