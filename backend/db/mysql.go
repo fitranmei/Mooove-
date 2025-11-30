@@ -3,7 +3,7 @@ package db
 import (
 	"log"
 
-	"github.com/fitranmei/Mooove-/config"
+	"github.com/fitranmei/Mooove-/backend/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

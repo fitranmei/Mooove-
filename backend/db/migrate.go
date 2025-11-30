@@ -3,7 +3,7 @@ package db
 import (
 	"log"
 
-	"github.com/fitranmei/Mooove-/models"
+	"github.com/fitranmei/Mooove-/backend/models"
 	"gorm.io/gorm"
 )
 
