@@ -7,14 +7,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// ====== Variabel tempat menyimpan repo global ======
 var (
 	repoStasiun StasiunRepoInterface
 	repoKereta  KeretaRepoInterface
 	repoJadwal  JadwalRepoInterface
 )
 
-// Interface disesuaikan dengan repository kamu
 type StasiunRepoInterface interface {
 	ListSemua() ([]models.Stasiun, error)
 	GetByID(id uint) (*models.Stasiun, error)
@@ -40,7 +38,6 @@ type JadwalRepoInterface interface {
 	CariJadwal(asal, tujuan string, tanggal time.Time) ([]models.Jadwal, error)
 }
 
-// ====== Fungsi inject dari main.go ======
 func InitHandlers(
 	s StasiunRepoInterface,
 	k KeretaRepoInterface,
@@ -51,7 +48,6 @@ func InitHandlers(
 	repoJadwal = j
 }
 
-// ====== REGISTER ROUTES (SATU FILE SAJA) ======
 func RegisterRoutes(app *fiber.App) {
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -60,7 +56,7 @@ func RegisterRoutes(app *fiber.App) {
 
 	api := app.Group("/api/v1")
 
-	// 📌 ROUTE STASIUN
+	// ROUTE STASIUN
 	stasiunHandler := NewHandlerStasiun(repoStasiun)
 	api.Get("/stasiun", stasiunHandler.ListSemua)
 	api.Get("/stasiun/:id", stasiunHandler.GetByID)
@@ -68,7 +64,7 @@ func RegisterRoutes(app *fiber.App) {
 	api.Put("/stasiun/:id", stasiunHandler.Update)
 	api.Delete("/stasiun/:id", stasiunHandler.Hapus)
 
-	// 📌 ROUTE KERETA
+	// ROUTE KERETA
 	keretaHandler := NewHandlerKereta(repoKereta)
 	api.Get("/kereta", keretaHandler.ListSemua)
 	api.Get("/kereta/:id", keretaHandler.GetByID)
@@ -76,7 +72,7 @@ func RegisterRoutes(app *fiber.App) {
 	api.Put("/kereta/:id", keretaHandler.Update)
 	api.Delete("/kereta/:id", keretaHandler.Hapus)
 
-	// 📌 ROUTE JADWAL + PENCARIAN
+	// ROUTE JADWAL
 	jadwalHandler := NewHandlerJadwal(repoJadwal)
 	api.Get("/jadwal", jadwalHandler.ListSemua)
 	api.Get("/jadwal/:id", jadwalHandler.GetByID)
