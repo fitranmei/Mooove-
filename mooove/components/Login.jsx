@@ -38,7 +38,7 @@ export default function Login({ navigation }) {
                 <AppText style={{color: '#F31260', marginHorizontal:10, marginBottom:20}}>Lupa Password?</AppText>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('register')}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('home')}>
                 <AppText style={styles.textButton}>Masuk</AppText>
             </TouchableOpacity>
             <AppText style={styles.text}>Belum punya akun? 
@@ -91,7 +91,9 @@ const styles = StyleSheet.create({
   },
   image: {
     width: 150,
-    height: 150,
+    height: 50,
+    marginTop: 60,
+    marginBottom : 20,
     marginHorizontal: 30,
   },
   button: {
