@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     },
     
     scrollView: {
-        marginTop: 20, // Jarak header ke kartu pertama
+        marginTop: 20,
     },
 
     option: {
