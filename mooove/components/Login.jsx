@@ -3,7 +3,7 @@ import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, 
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
 
-export default function Register({ navigation }) {
+export default function Login({ navigation }) {
     return (
     <View style={styles.container}>
         <ImageBackground
@@ -13,13 +13,8 @@ export default function Register({ navigation }) {
 
           <View style={styles.card}>
             <ScrollView showsVerticalScrollIndicator={false}></ScrollView>
-            <AppText style={styles.title}>Buat Akun</AppText>
+            <AppText style={styles.title}>Masuk</AppText>
             <AppText style={styles.subtitle}>Silahkan isi detail akun anda</AppText>
-
-            <TextInput 
-              style={styles.input}
-              placeholder="Nama Lengkap"
-            />
 
             <TextInput 
               style={styles.input}
@@ -39,19 +34,16 @@ export default function Register({ navigation }) {
               secureTextEntry={true}
             />
 
-            <TextInput 
-              style={styles.input}
-              placeholder="Konfirmasi Password"
-              secureTextEntry={true}
-            />
-              
+            <TouchableOpacity style={{marginHorizontal: 30}} onPress={() => navigation.navigate('register')}>
+                <AppText style={{color: '#F31260', marginHorizontal:10, marginBottom:20}}>Lupa Password?</AppText>
+            </TouchableOpacity>
             
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('register')}>
-                <AppText style={styles.textButton}>Daftar</AppText>
+                <AppText style={styles.textButton}>Masuk</AppText>
             </TouchableOpacity>
-            <AppText style={styles.text}>Sudah punya akun? 
-              <TouchableOpacity onPress={() => navigation.navigate('login')}>
-                <AppText style={styles.link} onPress={() => navigation.navigate('login')}> Login Disini</AppText>
+            <AppText style={styles.text}>Belum punya akun? 
+              <TouchableOpacity onPress={() => navigation.navigate('register')}>
+                <AppText style={styles.link}> Buat Disini</AppText>
               </TouchableOpacity>
             </AppText>
           </View>

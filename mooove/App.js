@@ -1,5 +1,6 @@
 import Welcome from './components/Welcome';
 import Register from './components/Register';
+import Login from './components/Login';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -32,6 +33,12 @@ export default function App() {
         <Stack.Screen 
           name="register" 
           component={Register} 
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen 
+          name="login" 
+          component={Login} 
           options={{ headerShown: false }}
         />
       
