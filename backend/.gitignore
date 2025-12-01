@@ -1,0 +1,7 @@
+.env
+
+bin/
+/bin/*
+
+/go/pkg
+/go/bin
