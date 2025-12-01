@@ -1,16 +1,30 @@
 package main
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"log"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+
+	"github.com/fitranmei/Mooove-/backend/config"
+	"github.com/fitranmei/Mooove-/backend/db"
+	"github.com/fitranmei/Mooove-/backend/handlers"
+)
 
 func main() {
-	app := fiber.New(fiber.Config{
-		AppName:      "Mooove",
-		ServerHeader: "Fiber",
-	})
+	cfg := config.Load()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello World yooooooooo!")
-	})
+	database := db.ConnectMySQL(cfg)
 
-	app.Listen(":3000")
+	db.RunMigrations(database)
+
+	// fiber instance
+	app := fiber.New()
+	app.Use(logger.New())
+
+	handlers.RegisterRoutes(app)
+
+	addr := ":" + cfg.Port
+	log.Printf("API server running on %s", addr)
+	log.Fatal(app.Listen(addr))
 }

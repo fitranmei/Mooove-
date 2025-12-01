@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func RunMigration(db *gorm.DB) {
-	err := db.AutoMigrate(
+func RunMigrations(db *gorm.DB) {
+	if err := db.AutoMigrate(
 		&models.User{},
-	)
-	if err != nil {
-		log.Fatal("migration failed:", err)
+	); err != nil {
+		log.Fatalf("migration failed: %v", err)
 	}
+	log.Println("Migration complete (User)")
 }

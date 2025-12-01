@@ -11,16 +11,17 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		DSN:        getEnv("DSN", "dev:devpass@tcp(db:3306)/tickets?parseTime=true"),
-		Port:       getEnv("PORT", "8080"),
-		JwtSecret:  getEnv("JWT_SECRET", "dev-secret"),
-		StorageDir: getEnv("STORAGE_DIR", "./storage"),
+		DSN:        getenv("DSN", "root:@tcp(127.0.0.1:3306)/mooove_db?parseTime=true&loc=Local"),
+		Port:       getenv("PORT", "8080"),
+		JwtSecret:  getenv("JWT_SECRET", "verymooove123"),
+		StorageDir: getenv("STORAGE_DIR", "./storage"),
 	}
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+func getenv(key, fallback string) string {
+	val := os.Getenv(key)
+	if val != "" {
+		return val
 	}
-	return def
+	return fallback
 }
