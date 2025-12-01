@@ -9,6 +9,7 @@ import (
 	"github.com/fitranmei/Mooove-/backend/config"
 	"github.com/fitranmei/Mooove-/backend/db"
 	"github.com/fitranmei/Mooove-/backend/handlers"
+	"github.com/fitranmei/Mooove-/backend/repositories"
 )
 
 func main() {
@@ -18,7 +19,13 @@ func main() {
 
 	db.RunMigrations(database)
 
-	// fiber instance
+	// Inisialisasi repositori
+	repoStasiun := repositories.NewStasiunRepo(database)
+	repoKereta := repositories.NewKeretaRepo(database)
+	repoJadwal := repositories.NewJadwalRepo(database)
+
+	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal)
+
 	app := fiber.New()
 	app.Use(logger.New())
 
