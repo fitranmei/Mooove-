@@ -16,6 +16,7 @@ func NewAuthHandler(svc models.AuthService) *AuthHandler {
 }
 
 type registerReq struct {
+	Fullname string `json:"fullname"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -49,4 +50,18 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"token": token, "user": user})
+}
+
+func (h *AuthHandler) Me(c *fiber.Ctx) error {
+	fullname := c.Locals("user_fullname")
+	email := c.Locals("user_email")
+
+	if fullname == nil || email == nil {
+		return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	return c.JSON(fiber.Map{
+		"fullname": fullname,
+		"email":    email,
+	})
 }
