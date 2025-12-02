@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, ImageBackground, Image, StyleSheet, ScrollView } from 'react-native';
+import { View, ImageBackground, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
 
 export default function Home({ navigation }) {
     return (
         <View style={styles.container}>
+            {/* banner di atas menampilkan username, logo */}
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.headerBg}
@@ -17,19 +18,21 @@ export default function Home({ navigation }) {
                 </View>
             </ImageBackground>
 
+
+            {/* option option fitur di home */}
             <ScrollView 
                 showsVerticalScrollIndicator={false} 
                 style={styles.scrollView}
                 contentContainerStyle={{ paddingBottom: 50 }}
             >
-                
-                <View style={styles.option}>
-                    <Image source={require('../assets/images/home-icon-1.png')} style={styles.icon} />
-                    <View style={styles.textOption}>
-                        <AppText style={styles.title}>Kereta Antar Kota</AppText>
-                        <AppText style={styles.subtitle}>Pesan tiket kereta antar kota anda sekarang menjadi lebih mudah!</AppText>
+
+                    <View style={styles.option}>
+                        <Image source={require('../assets/images/home-icon-1.png')} style={styles.icon} />
+                        <View style={styles.textOption}>
+                            <AppText style={styles.title}>Kereta Antar Kota</AppText>
+                            <AppText style={styles.subtitle}>Pesan tiket kereta antar kota anda sekarang menjadi lebih mudah!</AppText>
+                        </View>
                     </View>
-                </View>
 
                 <View style={styles.rowContainer}>
                     <View style={styles.smallOption}>
@@ -62,6 +65,36 @@ export default function Home({ navigation }) {
                 <Image source={require('../assets/images/home-banner.png')} style={{width: '90%', height: 150, resizeMode: 'contain', alignSelf: 'center', marginTop: 30}} />
 
             </ScrollView>
+
+            <View style={styles.navbar}>
+                <TouchableOpacity onPress={() => navigation.navigate('home')}>
+                    <View style={styles.navItem}>
+                        <Image source={require('../assets/images/navitem-1.png')} style={[styles.navIcon, {tintColor: '#F31260'}]}></Image>
+                        <AppText style={styles.navTextActive}>Beranda</AppText>
+                    </View>
+                </TouchableOpacity>
+                
+                <TouchableOpacity onPress={() => navigation.navigate('myticket')}>
+                    <View style={styles.navItem}>
+                        <Image source={require('../assets/images/navitem-2.png')} style={styles.navIcon}></Image>
+                        <AppText style={styles.navText}>Tiket Saya</AppText>
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => navigation.navigate('register')}>
+                    <View style={styles.navItem}>
+                        <Image source={require('../assets/images/navitem-3.png')} style={styles.navIcon}></Image>
+                        <AppText style={styles.navText}>Riwayat</AppText>
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => navigation.navigate('register')}>
+                    <View style={styles.navItem}>
+                        <Image source={require('../assets/images/navitem-4.png')} style={styles.navIcon}></Image>
+                        <AppText style={styles.navText}>Akun Saya</AppText>
+                    </View>
+                </TouchableOpacity>
+            </View>
 
             <StatusBar style="light" />
         </View>
@@ -101,7 +134,6 @@ const styles = StyleSheet.create({
     scrollView: {
         marginTop: 20,
     },
-
     option: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -166,5 +198,33 @@ const styles = StyleSheet.create({
         color: '#A4A3A3',
         fontSize: 11,
         lineHeight: 16,
+    },
+    navbar: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        height: 70,
+        paddingBottom: 10,
+    },
+    navItem: {
+
+    },
+    navIcon: {
+        width: 30,
+        height: 30,
+        resizeMode: 'contain',
+        alignSelf: 'center',
+    },
+    navText: {
+        textAlign: 'center',
+    },
+    navTextActive: {
+        textAlign: 'center',
+        color: '#F31260',
     }
 });

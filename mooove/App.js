@@ -2,6 +2,7 @@ import Welcome from './components/Welcome';
 import Register from './components/Register';
 import Login from './components/Login';
 import Home from './components/Home';
+import MyTicket from './components/MyTicket';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -46,6 +47,12 @@ export default function App() {
         <Stack.Screen 
           name="home" 
           component={Home} 
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen 
+          name="myticket" 
+          component={MyTicket} 
           options={{ headerShown: false }}
         />
       

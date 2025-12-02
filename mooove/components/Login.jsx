@@ -9,10 +9,11 @@ export default function Login({ navigation }) {
         <ImageBackground
         source={require('../assets/images/bg-top.png')}
         style={styles.bgimage}>
+          
           <Image source={require('../assets/images/logo-top.png')} style={styles.image}></Image>
 
+          <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
-            <ScrollView showsVerticalScrollIndicator={false}></ScrollView>
             <AppText style={styles.title}>Masuk</AppText>
             <AppText style={styles.subtitle}>Silahkan isi detail akun anda</AppText>
 
@@ -47,6 +48,8 @@ export default function Login({ navigation }) {
               </TouchableOpacity>
             </AppText>
           </View>
+
+          </ScrollView>
 
             <StatusBar style="auto" />
         </ImageBackground>
