@@ -1,140 +1,162 @@
 import React from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 
 export default function Account({ navigation }) {
+    const menuItems = [
+        { id: 1, title: 'Pusat Bantuan', icon: 'help', target: null },
+        { id: 2, title: 'Bahasa', icon: 'language', target: null },
+        { id: 3, title: 'Log Out', icon: 'log-out-outline', target: 'login' },
+    ];
+
     return (
-    <View style={styles.container}>
-        <ImageBackground
-        source={require('../assets/images/bg-top.png')}
-        style={styles.bgimage}>
-          
-          <AppText style={styles.welcome}>Akun Saya</AppText>
+        <View style={styles.container}>
+            <ImageBackground
+                source={require('../assets/images/bg-top.png')}
+                style={styles.headerBg}
+                imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
+            >
+                <View style={styles.headerContent}>
+                    <AppText style={styles.pageTitle}>Akun Saya</AppText>
+                </View>
+            </ImageBackground>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
+            <View style={styles.contentContainer}>
+                <View style={styles.userCard}>
+                    <View style={styles.profileImageContainer}>
+                         <Ionicons name="person" size={40} color="#CCC" />
+                    </View>
+                    <View style={styles.userInfo}>
+                        <AppText style={styles.userName}>USER</AppText>
+                        <AppText style={styles.userEmail}>user@user.com</AppText>
+                    </View>
+                </View>
 
-          </View>
+                <View style={styles.menuContainer}>
+                    {menuItems.map((item) => (
+                        <TouchableOpacity 
+                            key={item.id} 
+                            style={styles.menuItem}
+                            onPress={() => {
+                                if (item.target) {
+                                    navigation.navigate(item.target);
+                                }
+                            }}
+                        >
+                            <View style={styles.menuItemLeft}>
+                                <View style={styles.menuIconContainer}>
+                                    <Ionicons name={item.icon} size={24} color="#FFFFFF" />
+                                </View>
+                                <AppText style={styles.menuTitle}>{item.title}</AppText>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color="#000" />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
 
-          </ScrollView>
-
-            <StatusBar style="auto" />
-        </ImageBackground>
-    </View>
-  );
+            <StatusBar style="light" />
+        </View>
+    );
 }
-    
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bgimage: {
-    flex: 1,
-    width: '100%',
-    height: 220,
-    resizeMode: 'cover',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderColor: '#E4E4E7',
-    paddingBottom: 50,
-  },
-  title: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 20,
-    color: '#000000',
-    marginTop: 25,
-    marginHorizontal: 30,
-  },
-  subtitle: {
-    fontFamily: 'PlusJakartaSans_500Medium',
-    color: '#000000',
-    marginTop: 10,
-    marginHorizontal: 30,
-    fontSize: 18,
-  },
-      welcome: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: 33,
-        color: '#FFFFFF',
-        marginBottom: 40,
-        marginTop: 100,
-        marginLeft: 30,
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
     },
-  image: {
-    width: 150,
-    height: 50,
-    marginTop: 60,
-    marginBottom : 20,
-    marginHorizontal: 30,
-  },
-  button: {
-    backgroundColor: '#F31260',
-    marginHorizontal: 30,
-    marginTop: 10,
-    paddingVertical: 14,
-    borderRadius: 50,
-  },
-  textButton: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    color: '#FFFFFF',
-    fontSize: 20
-  },
-  input: {
-    marginTop: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E4E4E7',
-    borderRadius: 50,
-    marginHorizontal: 30,
-    paddingHorizontal: 20,
-    height: 50,
-    fontSize: 16,
-  },
-  text: {
-    color: '#000000',
-    textAlign: 'center',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  },
-  link: {
-    color: '#F31260',
-    fontFamily: 'PlusJakartaSans_700Bold',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  },
-
-  featureSection: {
-    flexDirection: 'row',
-    marginHorizontal: 10,
-
-},
-feature: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    marginHorizontal: 15,
-},
-
-featureIcon: {
-    width: 55,
-    height: 55,
-},
-
-featureText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    color: '#000000',
-    marginTop: 4,
-    fontSize: 14,
-},
+    headerBg: {
+        width: '100%',
+        height: 180,
+        paddingTop: 60,
+        justifyContent: 'flex-start',
+    },
+    headerContent: {
+        paddingHorizontal: 20,
+    },
+    pageTitle: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 28,
+        color: '#FFFFFF',
+    },
+    contentContainer: {
+        flex: 1,
+        marginTop: -40,
+        paddingHorizontal: 20,
+    },
+    userCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    profileImageContainer: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#F0F0F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    userInfo: {
+        flex: 1,
+    },
+    userName: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 18,
+        color: '#000',
+        marginBottom: 4,
+    },
+    userEmail: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#A4A3A3',
+    },
+    menuContainer: {
+        flex: 1,
+    },
+    menuItem: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    menuIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F31260',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    menuTitle: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#000',
+    },
 });

@@ -1,140 +1,257 @@
 import React from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { View, ImageBackground, StyleSheet, SectionList, Image } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 
 export default function History({ navigation }) {
+  
+  const historyData = [
+    {
+      title: '08 Mei 2025',
+      data: [
+        {
+          id: '1',
+          bookingCode: 'TFI88JR',
+          status: 'Batal',
+          trainName: 'ANTARKOTA - BIS',
+          origin: 'LLG',
+          destination: 'KPT',
+          price: 'Rp 180.000',
+          type: 'bisnis'
+        },
+        {
+          id: '2',
+          bookingCode: 'ADH09KJ',
+          status: 'Lunas',
+          trainName: 'ANTARKOTA - EKO',
+          origin: 'LLG',
+          destination: 'KPT',
+          price: 'Rp 32.000',
+          type: 'ekonomi'
+        }
+      ]
+    },
+    {
+      title: '25 Maret 2025',
+      data: [
+         {
+          id: '3',
+          bookingCode: 'MJT23UY',
+          status: 'Lunas',
+          trainName: 'ANTARKOTA - BIS',
+          origin: 'KPT',
+          destination: 'LLG',
+          price: 'Rp 180.000',
+          type: 'bisnis'
+        }
+      ]
+    }
+  ];
+
+  const renderSectionHeader = ({ section: { title } }) => (
+    <View style={styles.sectionHeader}>
+      <AppText style={styles.sectionHeaderText}>{title}</AppText>
+    </View>
+  );
+
+  const renderTicket = ({ item }) => {
+    const isCancelled = item.status === 'Batal';
+    const headerBgColor = isCancelled ? '#EAEAEA' : '#FFC8DD'; // Gray for cancelled, Pink for paid
+    const statusBadgeBg = isCancelled ? '#FF8A80' : '#C8E6C9'; // Red-ish for cancelled, Green-ish for paid
+    const statusTextColor = isCancelled ? '#D32F2F' : '#2E7D32';
+    const statusText = item.status;
+
     return (
+        <View style={styles.ticketCard}>
+            <View style={[styles.cardHeader, { backgroundColor: headerBgColor }]}>
+                <View>
+                    <AppText style={styles.bookingLabel}>Kode Pemesanan</AppText>
+                    <AppText style={styles.bookingCode}>{item.bookingCode}</AppText>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: statusBadgeBg }]}>
+                    <AppText style={[styles.statusText, { color: statusTextColor }]}>{statusText}</AppText>
+                </View>
+            </View>
+
+            <View style={styles.cardBody}>
+                <View style={styles.trainRow}>
+                    <View style={styles.iconContainer}>
+                        <Ionicons name="train" size={24} color="#FFF" />
+                    </View>
+                    <AppText style={styles.trainName}>{item.trainName}</AppText>
+                </View>
+
+                <View style={styles.routeRow}>
+                    <View style={styles.routeContainer}>
+                        <AppText style={styles.routeText}>{item.origin}</AppText>
+                        <Ionicons name="arrow-forward" size={16} color="#888" style={{ marginHorizontal: 8 }} />
+                        <AppText style={styles.routeText}>{item.destination}</AppText>
+                    </View>
+                    <View>
+                        <AppText style={styles.priceLabel}>Total Harga</AppText>
+                        <AppText style={styles.priceText}>{item.price}</AppText>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+  };
+
+  return (
     <View style={styles.container}>
         <ImageBackground
-        source={require('../assets/images/bg-top.png')}
-        style={styles.bgimage}>
-          
-          <AppText style={styles.welcome}>Riwayat</AppText>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
-            
-          </View>
-
-          </ScrollView>
-
-            <StatusBar style="auto" />
+            source={require('../assets/images/bg-top.png')}
+            style={styles.headerBg}
+            imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
+        >
+            <View style={styles.headerContent}>
+                <AppText style={styles.pageTitle}>Riwayat</AppText>
+            </View>
         </ImageBackground>
+
+        <View style={styles.contentContainer}>
+            <SectionList
+                sections={historyData}
+                keyExtractor={(item, index) => item.id + index}
+                renderItem={renderTicket}
+                renderSectionHeader={renderSectionHeader}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
+                stickySectionHeadersEnabled={false}
+            />
+        </View>
+
+        <StatusBar style="light" />
     </View>
   );
 }
-    
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bgimage: {
-    flex: 1,
-    width: '100%',
-    height: 220,
-    resizeMode: 'cover',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderColor: '#E4E4E7',
-    paddingBottom: 50,
-  },
-  title: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 20,
-    color: '#000000',
-    marginTop: 25,
-    marginHorizontal: 30,
-  },
-  subtitle: {
-    fontFamily: 'PlusJakartaSans_500Medium',
-    color: '#000000',
-    marginTop: 10,
-    marginHorizontal: 30,
-    fontSize: 18,
-  },
-      welcome: {
-        fontFamily: 'PlusJakartaSans_700Bold',
-        fontSize: 33,
-        color: '#FFFFFF',
-        marginBottom: 40,
-        marginTop: 100,
-        marginLeft: 30,
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
     },
-  image: {
-    width: 150,
-    height: 50,
-    marginTop: 60,
-    marginBottom : 20,
-    marginHorizontal: 30,
-  },
-  button: {
-    backgroundColor: '#F31260',
-    marginHorizontal: 30,
-    marginTop: 10,
-    paddingVertical: 14,
-    borderRadius: 50,
-  },
-  textButton: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    color: '#FFFFFF',
-    fontSize: 20
-  },
-  input: {
-    marginTop: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E4E4E7',
-    borderRadius: 50,
-    marginHorizontal: 30,
-    paddingHorizontal: 20,
-    height: 50,
-    fontSize: 16,
-  },
-  text: {
-    color: '#000000',
-    textAlign: 'center',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  },
-  link: {
-    color: '#F31260',
-    fontFamily: 'PlusJakartaSans_700Bold',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  },
-
-  featureSection: {
-    flexDirection: 'row',
-    marginHorizontal: 10,
-
-},
-feature: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    marginHorizontal: 15,
-},
-
-featureIcon: {
-    width: 55,
-    height: 55,
-},
-
-featureText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    color: '#000000',
-    marginTop: 4,
-    fontSize: 14,
-},
+    headerBg: {
+        width: '100%',
+        height: 180, // Increased height to accommodate the rounded overlap
+        paddingTop: 60,
+        justifyContent: 'flex-start',
+    },
+    headerContent: {
+        paddingHorizontal: 20,
+    },
+    pageTitle: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 28,
+        color: '#FFFFFF',
+    },
+    contentContainer: {
+        flex: 1,
+        marginTop: -40, // Overlap with header
+        backgroundColor: '#F5F5F5',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        overflow: 'hidden', // To clip the content to the rounded corners
+    },
+    sectionHeader: {
+        backgroundColor: '#E0E0E0',
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        marginBottom: 10,
+    },
+    sectionHeaderText: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#555',
+    },
+    ticketCard: {
+        backgroundColor: '#FFF',
+        marginHorizontal: 20,
+        marginBottom: 15,
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    bookingLabel: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#666',
+    },
+    bookingCode: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#000',
+        marginTop: 2,
+    },
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+    },
+    statusText: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 12,
+    },
+    cardBody: {
+        padding: 16,
+    },
+    trainRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    iconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#F31260',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    trainName: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#000',
+    },
+    routeRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+    },
+    routeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    routeText: {
+        fontFamily: 'PlusJakartaSans_600SemiBold',
+        fontSize: 14,
+        color: '#555',
+    },
+    priceLabel: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 10,
+        color: '#888',
+        textAlign: 'right',
+    },
+    priceText: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#007AFF', // Blue color for price
+    },
 });
+
