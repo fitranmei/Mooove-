@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -10,6 +11,7 @@ import (
 	"github.com/fitranmei/Mooove-/backend/db"
 	"github.com/fitranmei/Mooove-/backend/handlers"
 	"github.com/fitranmei/Mooove-/backend/repositories"
+	"github.com/fitranmei/Mooove-/backend/services"
 )
 
 func main() {
@@ -24,7 +26,12 @@ func main() {
 	repoKereta := repositories.NewKeretaRepo(database)
 	repoJadwal := repositories.NewJadwalRepo(database)
 
-	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal)
+	// Auth repository + service
+	authRepo := repositories.NewAuthRepo(database)
+	authService := services.NewAuthServiceImpl(authRepo, cfg.JwtSecret, time.Hour*24)
+
+	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService)
+	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService)
 
 	app := fiber.New()
 	app.Use(logger.New())

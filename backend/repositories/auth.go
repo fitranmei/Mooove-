@@ -49,7 +49,7 @@ func (r *authRepo) RegisterUser(ctx context.Context, registerData *models.AuthCr
 
 	user := &models.User{
 		Email:    registerData.Email,
-		Fullname: registerData.Email, // or set Fullname later; AuthCredentials only has email+password
+		Fullname: registerData.Fullname,
 		Password: hashed,
 	}
 
