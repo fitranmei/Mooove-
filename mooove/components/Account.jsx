@@ -3,37 +3,18 @@ import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, 
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
 
-export default function History({ navigation }) {
+export default function Account({ navigation }) {
     return (
     <View style={styles.container}>
         <ImageBackground
         source={require('../assets/images/bg-top.png')}
         style={styles.bgimage}>
           
-          <AppText style={styles.welcome}>Tiket Saya</AppText>
+          <AppText style={styles.welcome}>Akun Saya</AppText>
 
           <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
-            <AppText style={styles.title}>Tiket dan Layanan Saya</AppText>
 
-            <View style={styles.featureSection}>
-                <View style={styles.feature}>
-                    <Image style={styles.featureIcon} source={require('../assets/images/myticket.png')}></Image>
-                    <AppText style={styles.featureText}>Antar Kota</AppText>
-                </View>
-            </View>
-
-            <View style={styles.ticketSection}>
-                <View style={styles.ticketItem}>
-                    <View style={styles.ticketTop}>
-
-                    </View>
-
-                    <View style={styles.ticketInfo}>
-
-                    </View>
-                </View>
-            </View>
           </View>
 
           </ScrollView>

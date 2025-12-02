@@ -9,7 +9,7 @@ export default function Login({ navigation }) {
         <ImageBackground
         source={require('../assets/images/bg-top.png')}
         style={styles.bgimage}>
-          
+
           <Image source={require('../assets/images/logo-top.png')} style={styles.image}></Image>
 
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -39,7 +39,7 @@ export default function Login({ navigation }) {
                 <AppText style={{color: '#F31260', marginHorizontal:10, marginBottom:20}}>Lupa Password?</AppText>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('home')}>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MainApp')}>
                 <AppText style={styles.textButton}>Masuk</AppText>
             </TouchableOpacity>
             <AppText style={styles.text}>Belum punya akun? 

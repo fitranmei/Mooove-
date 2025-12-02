@@ -66,36 +66,6 @@ export default function Home({ navigation }) {
 
             </ScrollView>
 
-            <View style={styles.navbar}>
-                <TouchableOpacity onPress={() => navigation.navigate('home')}>
-                    <View style={styles.navItem}>
-                        <Image source={require('../assets/images/navitem-1.png')} style={[styles.navIcon, {tintColor: '#F31260'}]}></Image>
-                        <AppText style={styles.navTextActive}>Beranda</AppText>
-                    </View>
-                </TouchableOpacity>
-                
-                <TouchableOpacity onPress={() => navigation.navigate('myticket')}>
-                    <View style={styles.navItem}>
-                        <Image source={require('../assets/images/navitem-2.png')} style={styles.navIcon}></Image>
-                        <AppText style={styles.navText}>Tiket Saya</AppText>
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => navigation.navigate('register')}>
-                    <View style={styles.navItem}>
-                        <Image source={require('../assets/images/navitem-3.png')} style={styles.navIcon}></Image>
-                        <AppText style={styles.navText}>Riwayat</AppText>
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => navigation.navigate('register')}>
-                    <View style={styles.navItem}>
-                        <Image source={require('../assets/images/navitem-4.png')} style={styles.navIcon}></Image>
-                        <AppText style={styles.navText}>Akun Saya</AppText>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
             <StatusBar style="light" />
         </View>
     );
@@ -199,32 +169,4 @@ const styles = StyleSheet.create({
         fontSize: 11,
         lineHeight: 16,
     },
-    navbar: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        width: '100%',
-        height: 70,
-        paddingBottom: 10,
-    },
-    navItem: {
-
-    },
-    navIcon: {
-        width: 30,
-        height: 30,
-        resizeMode: 'contain',
-        alignSelf: 'center',
-    },
-    navText: {
-        textAlign: 'center',
-    },
-    navTextActive: {
-        textAlign: 'center',
-        color: '#F31260',
-    }
 });

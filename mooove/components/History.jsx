@@ -10,30 +10,11 @@ export default function History({ navigation }) {
         source={require('../assets/images/bg-top.png')}
         style={styles.bgimage}>
           
-          <AppText style={styles.welcome}>Tiket Saya</AppText>
+          <AppText style={styles.welcome}>Riwayat</AppText>
 
           <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
-            <AppText style={styles.title}>Tiket dan Layanan Saya</AppText>
-
-            <View style={styles.featureSection}>
-                <View style={styles.feature}>
-                    <Image style={styles.featureIcon} source={require('../assets/images/myticket.png')}></Image>
-                    <AppText style={styles.featureText}>Antar Kota</AppText>
-                </View>
-            </View>
-
-            <View style={styles.ticketSection}>
-                <View style={styles.ticketItem}>
-                    <View style={styles.ticketTop}>
-
-                    </View>
-
-                    <View style={styles.ticketInfo}>
-
-                    </View>
-                </View>
-            </View>
+            
           </View>
 
           </ScrollView>
