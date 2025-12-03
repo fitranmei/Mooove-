@@ -73,18 +73,18 @@ func RegisterRoutes(app *fiber.App) {
 	// ================ ROUTE STASIUN ==================
 	stasiunHandler := NewHandlerStasiun(repoStasiun)
 	api.Get("/stasiun", stasiunHandler.ListSemua)
-	api.Get("/stasiun/:id", stasiunHandler.GetByID)
-	api.Post("/stasiun", stasiunHandler.Buat)
-	api.Put("/stasiun/:id", stasiunHandler.Update)
-	api.Delete("/stasiun/:id", stasiunHandler.Hapus)
+	// api.Get("/stasiun/:id", stasiunHandler.GetByID)
+	// api.Post("/stasiun", stasiunHandler.Buat)
+	// api.Put("/stasiun/:id", stasiunHandler.Update)
+	// api.Delete("/stasiun/:id", stasiunHandler.Hapus)
 
 	// ================ ROUTE KERETA ===================
 	keretaHandler := NewHandlerKereta(repoKereta)
 	api.Get("/kereta", keretaHandler.ListSemua)
-	api.Get("/kereta/:id", keretaHandler.GetByID)
-	api.Post("/kereta", keretaHandler.Buat)
-	api.Put("/kereta/:id", keretaHandler.Update)
-	api.Delete("/kereta/:id", keretaHandler.Hapus)
+	// api.Get("/kereta/:id", keretaHandler.GetByID)
+	// api.Post("/kereta", keretaHandler.Buat)
+	// api.Put("/kereta/:id", keretaHandler.Update)
+	// api.Delete("/kereta/:id", keretaHandler.Hapus)
 
 	// ================ ROUTE JADWAL ===================
 	jadwalHandler := NewHandlerJadwal(repoJadwal)
