@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 import { register } from '../services/authService';
 
 export default function Register({ navigation }) {
     const [fullname, setFullname] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleRegister = async () => {
@@ -37,68 +39,83 @@ export default function Register({ navigation }) {
     };
 
     return (
-    <View style={styles.container}>
-        <ImageBackground
-        source={require('../assets/images/bg-top.png')}
-        style={styles.bgimage}>
-          <Image source={require('../assets/images/logo-top.png')} style={styles.image}></Image>
+        <View style={styles.container}>
+            <ImageBackground
+                source={require('../assets/images/bg-top.png')}
+                style={styles.bgimage}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                        <Image source={require('../assets/images/logo-top.png')} style={styles.image} />
 
-          <View style={styles.card}>
-            <ScrollView showsVerticalScrollIndicator={false}></ScrollView>
-            <AppText style={styles.title}>Buat Akun</AppText>
-            <AppText style={styles.subtitle}>Silahkan isi detail akun anda</AppText>
+                        <View style={styles.card}>
+                            <AppText style={styles.title}>Buat Akun</AppText>
+                            <AppText style={styles.subtitle}>Silahkan isi detail akun anda</AppText>
 
-            <TextInput 
-              style={styles.input}
-              placeholder="Nama Lengkap"
-              value={fullname}
-              onChangeText={setFullname}
-            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Nama Lengkap"
+                                value={fullname}
+                                onChangeText={setFullname}
+                            />
 
-            <TextInput 
-              style={styles.input}
-              placeholder="Email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                value={email}
+                                onChangeText={setEmail}
+                            />
 
-            <TextInput 
-              style={styles.input}
-              placeholder="Password"
-              secureTextEntry={true}
-              value={password}
-              onChangeText={setPassword}
-            />
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Password"
+                                    secureTextEntry={!showPassword}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                    <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color="gray" />
+                                </TouchableOpacity>
+                            </View>
 
-            <TextInput 
-              style={styles.input}
-              placeholder="Konfirmasi Password"
-              secureTextEntry={true}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
-              
-            
-            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-                {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                    <AppText style={styles.textButton}>Daftar</AppText>
-                )}
-            </TouchableOpacity>
-            <AppText style={styles.text}>Sudah punya akun? 
-              <TouchableOpacity onPress={() => navigation.navigate('login')}>
-                <AppText style={styles.link} onPress={() => navigation.navigate('login')}> Login Disini</AppText>
-              </TouchableOpacity>
-            </AppText>
-          </View>
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Konfirmasi Password"
+                                    secureTextEntry={!showConfirmPassword}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                />
+                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                    <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={24} color="gray" />
+                                </TouchableOpacity>
+                            </View>
 
-            <StatusBar style="auto" />
-        </ImageBackground>
-    </View>
-  );
+                            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <AppText style={styles.textButton}>Daftar</AppText>
+                                )}
+                            </TouchableOpacity>
+                            <AppText style={styles.text}>Sudah punya akun?
+                                <TouchableOpacity onPress={() => navigation.navigate('login')}>
+                                    <AppText style={styles.link}> Login Disini</AppText>
+                                </TouchableOpacity>
+                            </AppText>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+                <StatusBar style="auto" />
+            </ImageBackground>
+        </View>
+    );
 }
     
 const styles = StyleSheet.create({
@@ -167,6 +184,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: 50,
     fontSize: 16,
+  },
+  passwordContainer: {
+    marginTop: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E4E4E7',
+    borderRadius: 50,
+    marginHorizontal: 30,
+    paddingHorizontal: 20,
+    height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    height: '100%',
   },
   text: {
     color: '#000000',
