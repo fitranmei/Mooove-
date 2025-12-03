@@ -25,13 +25,11 @@ func main() {
 	repoStasiun := repositories.NewStasiunRepo(database)
 	repoKereta := repositories.NewKeretaRepo(database)
 	repoJadwal := repositories.NewJadwalRepo(database)
-
-	// Auth repository + service
 	authRepo := repositories.NewAuthRepo(database)
 	authService := services.NewAuthServiceImpl(authRepo, cfg.JwtSecret, time.Hour*24)
 
-	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService)
-	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService)
+	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService, database)
+	handlers.InitHandlers(repoStasiun, repoKereta, repoJadwal, authService, database)
 
 	app := fiber.New()
 	app.Use(logger.New())

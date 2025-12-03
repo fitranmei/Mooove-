@@ -17,7 +17,6 @@ func NewHandlerStasiun(repo repositories.StasiunRepo) *HandlerStasiun {
 	return &HandlerStasiun{repo: repo}
 }
 
-// GET /api/v1/stasiun
 func (h *HandlerStasiun) ListSemua(c *fiber.Ctx) error {
 	data, err := h.repo.ListSemua()
 	if err != nil {
@@ -26,7 +25,6 @@ func (h *HandlerStasiun) ListSemua(c *fiber.Ctx) error {
 	return c.JSON(data)
 }
 
-// GET /api/v1/stasiun/:id
 func (h *HandlerStasiun) GetByID(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	data, err := h.repo.GetByID(uint(id))
@@ -36,7 +34,6 @@ func (h *HandlerStasiun) GetByID(c *fiber.Ctx) error {
 	return c.JSON(data)
 }
 
-// POST /api/v1/stasiun
 func (h *HandlerStasiun) Buat(c *fiber.Ctx) error {
 	var req models.Stasiun
 	if err := c.BodyParser(&req); err != nil {
@@ -48,7 +45,6 @@ func (h *HandlerStasiun) Buat(c *fiber.Ctx) error {
 	return c.JSON(req)
 }
 
-// PUT /api/v1/stasiun/:id
 func (h *HandlerStasiun) Update(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	var req models.Stasiun
@@ -62,7 +58,6 @@ func (h *HandlerStasiun) Update(c *fiber.Ctx) error {
 	return c.JSON(req)
 }
 
-// DELETE /api/v1/stasiun/:id
 func (h *HandlerStasiun) Hapus(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	if err := h.repo.Delete(uint(id)); err != nil {

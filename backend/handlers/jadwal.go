@@ -18,7 +18,6 @@ func NewHandlerJadwal(repo repositories.JadwalRepo) *HandlerJadwal {
 	return &HandlerJadwal{repo: repo}
 }
 
-// GET /api/v1/jadwal
 func (h *HandlerJadwal) ListSemua(c *fiber.Ctx) error {
 	data, err := h.repo.ListSemua()
 	if err != nil {
@@ -27,7 +26,6 @@ func (h *HandlerJadwal) ListSemua(c *fiber.Ctx) error {
 	return c.JSON(data)
 }
 
-// GET /api/v1/jadwal/:id
 func (h *HandlerJadwal) GetByID(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	data, err := h.repo.GetByID(uint(id))
@@ -37,7 +35,6 @@ func (h *HandlerJadwal) GetByID(c *fiber.Ctx) error {
 	return c.JSON(data)
 }
 
-// POST /api/v1/jadwal
 func (h *HandlerJadwal) Buat(c *fiber.Ctx) error {
 	var req models.Jadwal
 	if err := c.BodyParser(&req); err != nil {
@@ -49,7 +46,6 @@ func (h *HandlerJadwal) Buat(c *fiber.Ctx) error {
 	return c.JSON(req)
 }
 
-// DELETE /api/v1/jadwal/:id
 func (h *HandlerJadwal) Hapus(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	if err := h.repo.Hapus(uint(id)); err != nil {
@@ -58,7 +54,6 @@ func (h *HandlerJadwal) Hapus(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "jadwal dihapus"})
 }
 
-// GET /api/v1/jadwal/cari?asal=GMR&tujuan=BDG&tanggal=2025-12-10
 func (h *HandlerJadwal) CariJadwal(c *fiber.Ctx) error {
 	asal := c.Query("asal")
 	tujuan := c.Query("tujuan")

@@ -53,7 +53,6 @@ func (r *stasiunRepo) ListSemua() ([]models.Stasiun, error) {
 }
 
 func (r *stasiunRepo) Update(s *models.Stasiun) error {
-	// Pastikan stasiun ada
 	var ex models.Stasiun
 	if err := r.db.First(&ex, s.ID).Error; err != nil {
 		return err

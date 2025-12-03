@@ -9,7 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthServiceImpl implements models.AuthService
 type AuthServiceImpl struct {
 	repo   models.AuthRepository
 	jwtKey string
@@ -24,19 +23,16 @@ func (s *AuthServiceImpl) Register(ctx context.Context, registerData *models.Aut
 	if registerData == nil {
 		return "", nil, errors.New("no register data")
 	}
-	// delegate create to repo (repo validates email)
 	user, err := s.repo.RegisterUser(ctx, registerData)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// generate token
 	token, err := s.generateToken(user)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// clear password before returning
 	user.Password = ""
 	return token, user, nil
 }
@@ -45,7 +41,6 @@ func (s *AuthServiceImpl) Login(ctx context.Context, loginData *models.AuthCrede
 	if loginData == nil {
 		return "", nil, errors.New("no login data")
 	}
-	// get user by email
 	user, err := s.repo.GetUser(ctx, "email = ?", loginData.Email)
 	if err != nil {
 		return "", nil, err
@@ -53,19 +48,15 @@ func (s *AuthServiceImpl) Login(ctx context.Context, loginData *models.AuthCrede
 	if user == nil {
 		return "", nil, errors.New("invalid credentials")
 	}
-
-	// verify password using helper from models
 	if !models.MatchesHash(loginData.Password, user.Password) {
 		return "", nil, errors.New("invalid credentials")
 	}
 
-	// generate token
 	token, err := s.generateToken(user)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// clear password
 	user.Password = ""
 	return token, user, nil
 }
