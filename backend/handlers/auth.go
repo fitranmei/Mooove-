@@ -31,7 +31,11 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid payload"})
 	}
-	creds := &models.AuthCredentials{Email: body.Email, Password: body.Password}
+	creds := &models.AuthCredentials{
+		Fullname: body.Fullname,
+		Email:    body.Email,
+		Password: body.Password,
+	}
 	token, user, err := h.authSvc.Register(context.Background(), creds)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
@@ -57,7 +61,7 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	email := c.Locals("user_email")
 
 	if fullname == nil || email == nil {
-		return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 	}
 
 	return c.JSON(fiber.Map{

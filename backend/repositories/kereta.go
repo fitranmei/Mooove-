@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// KeretaRepo menyediakan operasi CRUD untuk tabel kereta
 type KeretaRepo interface {
 	Buat(k *models.Kereta) error
 	GetByID(id uint) (*models.Kereta, error)

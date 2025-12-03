@@ -27,12 +27,10 @@ func bcryptGenerateImpl(password string) (string, error) {
 }
 
 func (r *authRepo) RegisterUser(ctx context.Context, registerData *models.AuthCredentials) (*models.User, error) {
-	// validate email
 	if !models.IsValidEmail(registerData.Email) {
 		return nil, errors.New("invalid email")
 	}
 
-	// check exists
 	existing, err := r.GetUser(ctx, "email = ?", registerData.Email)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
@@ -41,7 +39,6 @@ func (r *authRepo) RegisterUser(ctx context.Context, registerData *models.AuthCr
 		return nil, errors.New("email already registered")
 	}
 
-	// hash password
 	hashed, err := bcryptGenerate(registerData.Password)
 	if err != nil {
 		return nil, err
@@ -57,7 +54,6 @@ func (r *authRepo) RegisterUser(ctx context.Context, registerData *models.AuthCr
 		return nil, err
 	}
 
-	// hide password before returning (model tag already hides on json, but clear anyway)
 	user.Password = ""
 	return user, nil
 }
@@ -71,13 +67,10 @@ func (r *authRepo) GetUser(ctx context.Context, query interface{}, args ...inter
 		}
 		return nil, err
 	}
-	// do not clear password here; service needs it to compare
 	return &u, nil
 }
 
-// bcrypt helper local to repo file to avoid extra imports elsewhere
 func bcryptGenerate(password string) (string, error) {
-	// small wrapper to avoid import cycles; uses bcrypt
 	hashed, err := bcryptGenerateImpl(password)
 	return hashed, err
 }

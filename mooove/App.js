@@ -5,6 +5,9 @@ import Home from './components/Home';
 import MyTicket from './components/MyTicket';
 import History from './components/History';
 import Account from './components/Account';
+import BookingForm from './components/BookingForm';
+import TrainList from './components/TrainList';
+import PassengerData from './components/PassengerData';
 
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -101,7 +104,24 @@ export default function App() {
           component={MainTabs} 
           options={{ headerShown: false }}
         />
-      
+
+        <Stack.Screen
+          name="BookingForm"
+          component={BookingForm}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="TrainList"
+          component={TrainList}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="PassengerData"
+          component={PassengerData}
+          options={{ headerShown: false }}
+        />
 
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ImageBackground, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
+import { getUserData } from '../services/authService';
 
 export default function Home({ navigation }) {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const userData = await getUserData();
+            if (userData) {
+                setUser(userData);
+            }
+        };
+        loadUser();
+    }, []);
+
     return (
         <View style={styles.container}>
             {/* banner di atas menampilkan username, logo */}
@@ -14,7 +27,7 @@ export default function Home({ navigation }) {
                 <Image source={require('../assets/images/logo-top.png')} style={styles.logoTop} />
                 <View>
                     <AppText style={styles.welcome}>Selamat datang,</AppText>
-                    <AppText style={styles.username}>USER</AppText>
+                    <AppText style={styles.username}>{user ? user.fullname : 'Guest'}</AppText>
                 </View>
             </ImageBackground>
 
@@ -26,13 +39,13 @@ export default function Home({ navigation }) {
                 contentContainerStyle={{ paddingBottom: 50 }}
             >
 
-                    <View style={styles.option}>
+                    <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('BookingForm')}>
                         <Image source={require('../assets/images/home-icon-1.png')} style={styles.icon} />
                         <View style={styles.textOption}>
                             <AppText style={styles.title}>Kereta Antar Kota</AppText>
                             <AppText style={styles.subtitle}>Pesan tiket kereta antar kota anda sekarang menjadi lebih mudah!</AppText>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
                 <View style={styles.rowContainer}>
                     <View style={styles.smallOption}>

@@ -1,9 +1,41 @@
-import React from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
+import { register } from '../services/authService';
 
 export default function Register({ navigation }) {
+    const [fullname, setFullname] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleRegister = async () => {
+        if (!fullname || !email || !password || !confirmPassword) {
+            Alert.alert('Error', 'Mohon isi semua kolom');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Password tidak cocok');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await register(fullname, email, password);
+            Alert.alert('Sukses', 'Registrasi berhasil! Silahkan login.', [
+                { text: 'OK', onPress: () => navigation.navigate('login') }
+            ]);
+        } catch (error) {
+            Alert.alert('Gagal', error.error || 'Terjadi kesalahan saat registrasi');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
     <View style={styles.container}>
         <ImageBackground
@@ -19,35 +51,42 @@ export default function Register({ navigation }) {
             <TextInput 
               style={styles.input}
               placeholder="Nama Lengkap"
+              value={fullname}
+              onChangeText={setFullname}
             />
 
             <TextInput 
               style={styles.input}
               placeholder="Email"
               keyboardType="email-address"
-            />
-
-            <TextInput 
-              style={styles.input}
-              placeholder="Nomor Telepon"
-              keyboardType="phone-pad"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
 
             <TextInput 
               style={styles.input}
               placeholder="Password"
               secureTextEntry={true}
+              value={password}
+              onChangeText={setPassword}
             />
 
             <TextInput 
               style={styles.input}
               placeholder="Konfirmasi Password"
               secureTextEntry={true}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
             />
               
             
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('register')}>
-                <AppText style={styles.textButton}>Daftar</AppText>
+            <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                    <AppText style={styles.textButton}>Daftar</AppText>
+                )}
             </TouchableOpacity>
             <AppText style={styles.text}>Sudah punya akun? 
               <TouchableOpacity onPress={() => navigation.navigate('login')}>

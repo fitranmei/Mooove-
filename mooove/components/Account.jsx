@@ -1,14 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import { getUserData, logout } from '../services/authService';
 
 export default function Account({ navigation }) {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const userData = await getUserData();
+            if (userData) {
+                setUser(userData);
+            }
+        };
+        loadUser();
+    }, []);
+
+    const handleLogout = async () => {
+        await logout();
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'login' }],
+        });
+    };
+
     const menuItems = [
         { id: 1, title: 'Pusat Bantuan', icon: 'help', target: null },
         { id: 2, title: 'Bahasa', icon: 'language', target: null },
-        { id: 3, title: 'Log Out', icon: 'log-out-outline', target: 'login' },
+        { id: 3, title: 'Log Out', icon: 'log-out-outline', action: handleLogout },
     ];
 
     return (
@@ -29,8 +50,8 @@ export default function Account({ navigation }) {
                          <Ionicons name="person" size={40} color="#CCC" />
                     </View>
                     <View style={styles.userInfo}>
-                        <AppText style={styles.userName}>USER</AppText>
-                        <AppText style={styles.userEmail}>user@user.com</AppText>
+                        <AppText style={styles.userName}>{user ? user.fullname : 'Guest'}</AppText>
+                        <AppText style={styles.userEmail}>{user ? user.email : 'Not logged in'}</AppText>
                     </View>
                 </View>
 
@@ -40,7 +61,9 @@ export default function Account({ navigation }) {
                             key={item.id} 
                             style={styles.menuItem}
                             onPress={() => {
-                                if (item.target) {
+                                if (item.action) {
+                                    item.action();
+                                } else if (item.target) {
                                     navigation.navigate(item.target);
                                 }
                             }}

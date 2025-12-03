@@ -10,6 +10,9 @@ import (
 func RunMigrations(db *gorm.DB) {
 	if err := db.AutoMigrate(
 		&models.User{},
+		&models.Stasiun{},
+		&models.Kereta{},
+		&models.Jadwal{},
 	); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}

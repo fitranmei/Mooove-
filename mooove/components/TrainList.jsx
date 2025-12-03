@@ -1,31 +1,9 @@
-import React, { useState } from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React from 'react';
+import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
-import { login } from '../services/authService';
 
-export default function Login({ navigation }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Mohon isi email dan password');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            await login(email, password);
-            navigation.navigate('MainApp');
-        } catch (error) {
-            Alert.alert('Gagal', error.error || 'Email atau password salah');
-        } finally {
-            setLoading(false);
-        }
-    };
-
+export default function TrainList({ navigation }) {
     return (
     <View style={styles.container}>
         <ImageBackground
@@ -43,29 +21,26 @@ export default function Login({ navigation }) {
               style={styles.input}
               placeholder="Email"
               keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
+            />
+
+            <TextInput 
+              style={styles.input}
+              placeholder="Nomor Telepon"
+              keyboardType="phone-pad"
             />
 
             <TextInput 
               style={styles.input}
               placeholder="Password"
               secureTextEntry={true}
-              value={password}
-              onChangeText={setPassword}
             />
 
             <TouchableOpacity style={{marginHorizontal: 30}} onPress={() => navigation.navigate('register')}>
                 <AppText style={{color: '#F31260', marginHorizontal:10, marginBottom:20}}>Lupa Password?</AppText>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-                {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                    <AppText style={styles.textButton}>Masuk</AppText>
-                )}
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MainApp')}>
+                <AppText style={styles.textButton}>Masuk</AppText>
             </TouchableOpacity>
             <AppText style={styles.text}>Belum punya akun? 
               <TouchableOpacity onPress={() => navigation.navigate('register')}>

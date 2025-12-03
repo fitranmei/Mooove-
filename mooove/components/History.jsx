@@ -57,8 +57,8 @@ export default function History({ navigation }) {
 
   const renderTicket = ({ item }) => {
     const isCancelled = item.status === 'Batal';
-    const headerBgColor = isCancelled ? '#EAEAEA' : '#FFC8DD'; // Gray for cancelled, Pink for paid
-    const statusBadgeBg = isCancelled ? '#FF8A80' : '#C8E6C9'; // Red-ish for cancelled, Green-ish for paid
+    const headerBgColor = isCancelled ? '#EAEAEA' : '#FFC8DD';
+    const statusBadgeBg = isCancelled ? '#FF8A80' : '#C8E6C9';
     const statusTextColor = isCancelled ? '#D32F2F' : '#2E7D32';
     const statusText = item.status;
 
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     },
     headerBg: {
         width: '100%',
-        height: 180, // Increased height to accommodate the rounded overlap
+        height: 180,
         paddingTop: 60,
         justifyContent: 'flex-start',
     },
@@ -148,11 +148,11 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
-        marginTop: -40, // Overlap with header
+        marginTop: -40,
         backgroundColor: '#F5F5F5',
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
-        overflow: 'hidden', // To clip the content to the rounded corners
+        overflow: 'hidden',
     },
     sectionHeader: {
         backgroundColor: '#E0E0E0',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     priceText: {
         fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: 16,
-        color: '#007AFF', // Blue color for price
+        color: '#007AFF',
     },
 });
 

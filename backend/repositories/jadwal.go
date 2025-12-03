@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// JadwalRepo menyediakan fungsi untuk mengelola jadwal dan pencarian jadwal
 type JadwalRepo interface {
 	Buat(j *models.Jadwal) error
 	GetByID(id uint) (*models.Jadwal, error)
@@ -50,13 +49,10 @@ func (r *jadwalRepo) ListSemua() ([]models.Jadwal, error) {
 	return list, nil
 }
 
-// CariJadwal mencari jadwal berdasarkan kode stasiun asal & tujuan dan tanggal (YYYY-MM-DD)
-// tanggal parameter hanya menggunakan bagian date; jam diabaikan.
 func (r *jadwalRepo) CariJadwal(kodeAsal, kodeTujuan string, tanggal time.Time) ([]models.Jadwal, error) {
 	var hasil []models.Jadwal
 	dateStr := tanggal.Format("2006-01-02")
 
-	// GORM joins: sesuaikan nama tabel jika kamu men-override TableName pada model
 	err := r.db.
 		Preload("Kereta").
 		Preload("Asal").

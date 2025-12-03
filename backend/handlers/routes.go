@@ -6,12 +6,15 @@ import (
 	"github.com/fitranmei/Mooove-/backend/middlewares"
 	"github.com/fitranmei/Mooove-/backend/models"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 var (
-	repoStasiun StasiunRepoInterface
-	repoKereta  KeretaRepoInterface
-	repoJadwal  JadwalRepoInterface
+	repoStasiun       StasiunRepoInterface
+	repoKereta        KeretaRepoInterface
+	repoJadwal        JadwalRepoInterface
+	authServiceGlobal models.AuthService
+	dbConn            *gorm.DB
 )
 
 type StasiunRepoInterface interface {
@@ -39,18 +42,18 @@ type JadwalRepoInterface interface {
 	CariJadwal(asal, tujuan string, tanggal time.Time) ([]models.Jadwal, error)
 }
 
-var authServiceGlobal models.AuthService
-
 func InitHandlers(
 	stasiunRepo StasiunRepoInterface,
 	keretaRepo KeretaRepoInterface,
 	jadwalRepo JadwalRepoInterface,
 	authSvc models.AuthService,
+	db *gorm.DB,
 ) {
 	repoStasiun = stasiunRepo
 	repoKereta = keretaRepo
 	repoJadwal = jadwalRepo
 	authServiceGlobal = authSvc
+	dbConn = db
 }
 
 func RegisterRoutes(app *fiber.App) {
@@ -63,28 +66,25 @@ func RegisterRoutes(app *fiber.App) {
 
 	// ================ AUTH ROUTES ===================
 	authHandler := NewAuthHandler(authServiceGlobal)
-
 	api.Post("/auth/register", authHandler.Register)
 	api.Post("/auth/login", authHandler.Login)
-
-	// Protected route (requires JWT)
-	api.Get("/auth/me", middlewares.AuthProtected(), authHandler.Me)
+	api.Get("/auth/me", middlewares.AuthProtected(dbConn), authHandler.Me)
 
 	// ================ ROUTE STASIUN ==================
 	stasiunHandler := NewHandlerStasiun(repoStasiun)
 	api.Get("/stasiun", stasiunHandler.ListSemua)
-	api.Get("/stasiun/:id", stasiunHandler.GetByID)
-	api.Post("/stasiun", stasiunHandler.Buat)
-	api.Put("/stasiun/:id", stasiunHandler.Update)
-	api.Delete("/stasiun/:id", stasiunHandler.Hapus)
+	// api.Get("/stasiun/:id", stasiunHandler.GetByID)
+	// api.Post("/stasiun", stasiunHandler.Buat)
+	// api.Put("/stasiun/:id", stasiunHandler.Update)
+	// api.Delete("/stasiun/:id", stasiunHandler.Hapus)
 
 	// ================ ROUTE KERETA ===================
 	keretaHandler := NewHandlerKereta(repoKereta)
 	api.Get("/kereta", keretaHandler.ListSemua)
-	api.Get("/kereta/:id", keretaHandler.GetByID)
-	api.Post("/kereta", keretaHandler.Buat)
-	api.Put("/kereta/:id", keretaHandler.Update)
-	api.Delete("/kereta/:id", keretaHandler.Hapus)
+	// api.Get("/kereta/:id", keretaHandler.GetByID)
+	// api.Post("/kereta", keretaHandler.Buat)
+	// api.Put("/kereta/:id", keretaHandler.Update)
+	// api.Delete("/kereta/:id", keretaHandler.Hapus)
 
 	// ================ ROUTE JADWAL ===================
 	jadwalHandler := NewHandlerJadwal(repoJadwal)
@@ -92,6 +92,5 @@ func RegisterRoutes(app *fiber.App) {
 	api.Get("/jadwal/:id", jadwalHandler.GetByID)
 	api.Post("/jadwal", jadwalHandler.Buat)
 	api.Delete("/jadwal/:id", jadwalHandler.Hapus)
-
-	api.Get("/jadwal/cari", jadwalHandler.CariJadwal)
+	api.Get("/jadwal/cari", jadwalHandler.CariJadwal) // jadwal/cari?asal=GMR&tujuan=BDG&tanggal=2025-12-10
 }
