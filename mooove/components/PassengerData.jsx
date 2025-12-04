@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
@@ -16,10 +16,25 @@ export default function PassengerData({ navigation, route }) {
         passengers: '1'
     };
 
+    const totalPassengers = parseInt(passengers);
     const [user, setUser] = useState(null);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [additionalPassengers, setAdditionalPassengers] = useState([]);
+    const [newPassenger, setNewPassenger] = useState({ name: '', id: '' });
+
+    const handleAddPassenger = () => {
+        if (newPassenger.name && newPassenger.id) {
+            if (additionalPassengers.length < totalPassengers - 1) {
+                setAdditionalPassengers([...additionalPassengers, newPassenger]);
+                setNewPassenger({ name: '', id: '' });
+                setModalVisible(false);
+            }
+        }
+    };
 
     useEffect(() => {
         const loadUser = async () => {
@@ -69,7 +84,7 @@ export default function PassengerData({ navigation, route }) {
                     </View>
                     <AppText style={styles.dateTimeText}>{formattedDate}</AppText>
                     <AppText style={styles.timeText}>{train.departureTime} - {train.arrivalTime}</AppText>
-                    <AppText style={styles.passengerCount}>{passengers}</AppText>
+                    <AppText style={styles.passengerCount}>{passengers} Orang</AppText>
                 </View>
 
                 {/* Passenger Details Card */}
@@ -113,11 +128,37 @@ export default function PassengerData({ navigation, route }) {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.outlineButton}>
-                    <AppText style={styles.outlineButtonText}>Tambah Penumpang Lain</AppText>
-                </TouchableOpacity>
+                {additionalPassengers.map((p, index) => (
+                    <View key={index} style={styles.card}>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                            <View>
+                                <AppText style={styles.label}>PENUMPANG TAMBAHAN {index + 1}</AppText>
+                                <AppText style={styles.passengerName}>{p.name}</AppText>
+                                <AppText style={styles.passengerId}>{p.id}</AppText>
+                            </View>
+                            <TouchableOpacity onPress={() => {
+                                const newList = [...additionalPassengers];
+                                newList.splice(index, 1);
+                                setAdditionalPassengers(newList);
+                            }}>
+                                <Ionicons name="trash-outline" size={24} color="#F31260" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ))}
+
+                {additionalPassengers.length < totalPassengers - 1 && (
+                    <TouchableOpacity style={styles.outlineButton} onPress={() => setModalVisible(true)}>
+                        <AppText style={styles.outlineButtonText}>Tambah Penumpang Lain</AppText>
+                    </TouchableOpacity>
+                )}
 
                 <TouchableOpacity style={styles.primaryButton} onPress={() => {
+                    const allPassengers = [
+                        { name, email, phone, type: 'Dewasa', id: user?.id || '-' }, // Main passenger
+                        ...additionalPassengers.map(p => ({ ...p, type: 'Dewasa' }))
+                    ];
+                    
                     navigation.navigate('SeatSelection', {
                         train,
                         selectedClass,
@@ -125,7 +166,7 @@ export default function PassengerData({ navigation, route }) {
                         destination,
                         date,
                         passengers,
-                        passengerDetails: { name, email, phone }
+                        allPassengers
                     });
                 }}>
                     <AppText style={styles.primaryButtonText}>Lanjutkan</AppText>
@@ -133,6 +174,45 @@ export default function PassengerData({ navigation, route }) {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Add Passenger Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <AppText style={styles.modalTitle}>Tambah Penumpang</AppText>
+                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <AppText style={styles.inputLabel}>Nama Lengkap</AppText>
+                        <TextInput 
+                            style={styles.input}
+                            placeholder="Masukkan nama lengkap"
+                            value={newPassenger.name}
+                            onChangeText={(text) => setNewPassenger({...newPassenger, name: text})}
+                        />
+
+                        <AppText style={styles.inputLabel}>Nomor ID / Email</AppText>
+                        <TextInput 
+                            style={styles.input}
+                            placeholder="Masukkan No. KTP atau Email"
+                            value={newPassenger.id}
+                            onChangeText={(text) => setNewPassenger({...newPassenger, id: text})}
+                        />
+
+                        <TouchableOpacity style={styles.saveButton} onPress={handleAddPassenger}>
+                            <AppText style={styles.saveButtonText}>Simpan</AppText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <StatusBar style="light" />
         </View>
@@ -256,7 +336,7 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
     },
     infoBox: {
-        backgroundColor: '#FFD1DC', // Light pink
+        backgroundColor: '#FFD1DC',
         borderRadius: 8,
         padding: 15,
         marginTop: 10,
@@ -287,6 +367,57 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     primaryButtonText: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#FFFFFF',
+    },
+    passengerName: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#000',
+    },
+    passengerId: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 14,
+        color: '#666',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: '#FFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        paddingBottom: 40,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 18,
+        color: '#000',
+    },
+    inputLabel: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#000',
+        marginBottom: 8,
+    },
+    saveButton: {
+        backgroundColor: '#F31260',
+        borderRadius: 12,
+        paddingVertical: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    saveButtonText: {
         fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: 16,
         color: '#FFFFFF',

@@ -11,6 +11,8 @@ import PassengerData from './components/PassengerData';
 import SeatSelection from './components/SeatSelection';
 import PaymentConfirmation from './components/PaymentConfirmation';
 import PaymentMethod from './components/PaymentMethod';
+import PaymentInstruction from './components/PaymentInstruction';
+import TicketDetail from './components/TicketDetail';
 
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -141,6 +143,18 @@ export default function App() {
         <Stack.Screen
           name="PaymentMethod"
           component={PaymentMethod}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="PaymentInstruction"
+          component={PaymentInstruction}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="TicketDetail"
+          component={TicketDetail}
           options={{ headerShown: false }}
         />
 

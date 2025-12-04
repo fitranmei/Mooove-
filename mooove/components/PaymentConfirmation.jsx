@@ -111,8 +111,7 @@ export default function PaymentConfirmation({ navigation, route }) {
                             alert('Mohon pilih metode pembayaran terlebih dahulu.');
                             return;
                         }
-                        alert('Pembayaran Berhasil!');
-                        navigation.navigate('MainApp', { screen: 'home' });
+                        navigation.navigate('PaymentInstruction', { ...route.params });
                     }}
                     disabled={!selectedPaymentMethod}
                 >

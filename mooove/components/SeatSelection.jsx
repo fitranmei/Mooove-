@@ -5,16 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 
 export default function SeatSelection({ navigation, route }) {
-    const { train, selectedClass, origin, destination, date, passengers, passengerDetails } = route.params || {
+    const { train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers } = route.params || {
         train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25' },
         selectedClass: { type: 'BISNIS' },
         origin: 'KERTAPATI',
         destination: 'LUBUK LINGGAU',
         date: new Date().toISOString(),
         passengers: '1',
-        passengerDetails: {}
+        passengerDetails: {},
+        allPassengers: []
     };
 
+    const totalPassengers = parseInt(passengers);
     const formattedDate = new Date(date).toLocaleDateString('id-ID', {
         weekday: 'long',
         day: 'numeric',
@@ -33,7 +35,7 @@ export default function SeatSelection({ navigation, route }) {
     ];
 
     const [seats, setSeats] = useState(initialSeats);
-    const [selectedSeat, setSelectedSeat] = useState('2D');
+    const [selectedSeats, setSelectedSeats] = useState([]);
     const [selectedCarriage, setSelectedCarriage] = useState('Bisnis 1');
 
     const carriages = ['Bisnis 1', 'Bisnis 2', 'Bisnis 3'];
@@ -47,16 +49,23 @@ export default function SeatSelection({ navigation, route }) {
         const colName = columns[colIndex];
         const seatId = `${rowNum}${colName}`;
 
-        setSelectedSeat(seatId);
-        
-        const newSeats = [...seats];
+        if (selectedSeats.includes(seatId)) {
+            setSelectedSeats(selectedSeats.filter(id => id !== seatId));
+        } else {
+            if (selectedSeats.length < totalPassengers) {
+                setSelectedSeats([...selectedSeats, seatId]);
+            } else {
+                // Optional: Alert user that max seats selected
+                // Alert.alert('Info', `Anda hanya dapat memilih ${totalPassengers} kursi.`);
+            }
+        }
     };
 
     const renderSeat = (status, rowIndex, colIndex) => {
         const rowNum = seats[rowIndex].row;
         const colName = columns[colIndex];
         const seatId = `${rowNum}${colName}`;
-        const isSelected = seatId === selectedSeat;
+        const isSelected = selectedSeats.includes(seatId);
 
         let seatStyle = styles.seatAvailable;
         if (status === 1) seatStyle = styles.seatOccupied;
@@ -69,6 +78,11 @@ export default function SeatSelection({ navigation, route }) {
                 onPress={() => handleSeatPress(rowIndex, colIndex)}
                 disabled={status === 1}
             >
+                {isSelected && (
+                    <AppText style={{color: '#FFF', fontSize: 10, fontWeight: 'bold'}}>
+                        {selectedSeats.indexOf(seatId) + 1}
+                    </AppText>
+                )}
             </TouchableOpacity>
         );
     };
@@ -170,7 +184,12 @@ export default function SeatSelection({ navigation, route }) {
                     ))}
                 </View>
 
-                <TouchableOpacity style={styles.primaryButton} onPress={() => {
+                <TouchableOpacity style={[
+                    styles.primaryButton,
+                    selectedSeats.length !== totalPassengers && { backgroundColor: '#ccc' }
+                ]} 
+                disabled={selectedSeats.length !== totalPassengers}
+                onPress={() => {
                     navigation.navigate('PaymentConfirmation', {
                         train,
                         selectedClass,
@@ -179,11 +198,14 @@ export default function SeatSelection({ navigation, route }) {
                         date,
                         passengers,
                         passengerDetails,
-                        selectedSeat,
+                        allPassengers,
+                        selectedSeats,
                         selectedCarriage
                     });
                 }}>
-                    <AppText style={styles.primaryButtonText}>Lanjutkan</AppText>
+                    <AppText style={styles.primaryButtonText}>
+                        {selectedSeats.length === totalPassengers ? 'Lanjutkan' : `Pilih ${totalPassengers - selectedSeats.length} Kursi Lagi`}
+                    </AppText>
                 </TouchableOpacity>
 
                 <View style={{ height: 40 }} />
