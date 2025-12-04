@@ -18,11 +18,11 @@ export default function BookingForm({ navigation }) {
     const [origin, setOrigin] = useState('KERTAPATI');
     const [destination, setDestination] = useState('LUBUK LINGGAU');
     const [date, setDate] = useState(new Date());
-    const [passengers, setPassengers] = useState('1 Dewasa');
+    const [passengers, setPassengers] = useState('1');
 
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
-    const [activeField, setActiveField] = useState(null); // 'origin' or 'destination'
+    const [activeField, setActiveField] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleSwap = () => {
@@ -146,6 +146,7 @@ export default function BookingForm({ navigation }) {
                                 value={passengers}
                                 onChangeText={setPassengers}
                                 placeholder="Jumlah Penumpang"
+                                keyboardType="numeric"
                             />
                         </View>
                     </View>
@@ -153,7 +154,12 @@ export default function BookingForm({ navigation }) {
                     <View style={styles.spacerLarge} />
 
                     {/* Search Button */}
-                    <TouchableOpacity style={styles.searchButton} onPress={() => navigation.navigate('TrainList')}>
+                    <TouchableOpacity style={styles.searchButton} onPress={() => navigation.navigate('TrainList', {
+                        origin,
+                        destination,
+                        date: date.toISOString(),
+                        passengers
+                    })}>
                         <AppText style={styles.searchButtonText}>Cari Tiket Kereta</AppText>
                     </TouchableOpacity>
                 </View>
@@ -326,7 +332,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#FFFFFF',
     },
-    // Modal Styles
+
     modalContainer: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',

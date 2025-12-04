@@ -1,141 +1,316 @@
-import React from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 
-export default function TrainList({ navigation }) {
+export default function TrainList({ navigation, route }) {
+    const { origin, destination, date, passengers } = route.params || {
+        origin: 'KERTAPATI',
+        destination: 'LUBUK LINGGAU',
+        date: new Date().toISOString(),
+        passengers: '1'
+    };
+
+    const formattedDate = new Date(date).toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    // Mock Data
+    const trains = [
+        {
+            id: 'S1',
+            name: 'SINDANG MARGA S1',
+            duration: '6j 10m',
+            departureTime: '20:15',
+            departureStation: `${origin} (KPT)`,
+            arrivalTime: '02:25',
+            arrivalStation: `${destination} (LLG)`,
+            classes: [
+                { type: 'BISNIS', price: 180000 },
+                { type: 'EKSEKUTIF', price: 240000 },
+            ]
+        },
+        {
+            id: 'S9',
+            name: 'BUKIT SERELO S9',
+            duration: '6j 25m',
+            departureTime: '09:00',
+            departureStation: `${origin} (KPT)`,
+            arrivalTime: '15:25',
+            arrivalStation: `${destination} (LLG)`,
+            classes: [
+                { type: 'EKONOMI', price: 32000 },
+            ]
+        }
+    ];
+
+    const [expandedCard, setExpandedCard] = useState(trains[0].id);
+
+    const toggleExpand = (id) => {
+        setExpandedCard(expandedCard === id ? null : id);
+    };
+
+    const formatCurrency = (amount) => {
+        return `Rp${amount.toLocaleString('id-ID')}`;
+    };
+
+    const renderTrainCard = ({ item }) => {
+        const isExpanded = expandedCard === item.id;
+
+        return (
+            <View style={styles.card}>
+                <TouchableOpacity onPress={() => toggleExpand(item.id)} activeOpacity={0.8}>
+                    <View style={styles.cardHeader}>
+                        <AppText style={styles.trainName}>{item.name}</AppText>
+                        <AppText style={styles.duration}>{item.duration}</AppText>
+                    </View>
+
+                    <View style={styles.routeContainer}>
+                        <View style={styles.timeStation}>
+                            <View style={styles.timelineDot} />
+                            <View style={styles.timelineLine} />
+                            <AppText style={styles.time}>{item.departureTime}</AppText>
+                            <AppText style={styles.station}>{item.departureStation}</AppText>
+                        </View>
+                        <View style={styles.timeStation}>
+                            <View style={[styles.timelineDot, { backgroundColor: '#F31260' }]} />
+                            <AppText style={styles.time}>{item.arrivalTime}</AppText>
+                            <AppText style={styles.station}>{item.arrivalStation}</AppText>
+                        </View>
+                    </View>
+
+                    {!isExpanded && (
+                        <View style={styles.expandHint}>
+                            <AppText style={styles.expandText}>Lihat Kelas</AppText>
+                            <Ionicons name="chevron-down" size={16} color="#888" />
+                        </View>
+                    )}
+                     {isExpanded && (
+                        <View style={styles.expandHint}>
+                            <AppText style={styles.expandText}>Tutup</AppText>
+                            <Ionicons name="chevron-up" size={16} color="#888" />
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {isExpanded && (
+                    <View style={styles.classList}>
+                        {item.classes.map((cls, index) => (
+                            <TouchableOpacity 
+                                key={index} 
+                                style={styles.classItem} 
+                                onPress={() => navigation.navigate('PassengerData', {
+                                    train: item,
+                                    selectedClass: cls,
+                                    origin,
+                                    destination,
+                                    date,
+                                    passengers
+                                })}
+                            >
+                                <View>
+                                    <AppText style={styles.classType}>{cls.type}</AppText>
+                                    <AppText style={styles.passengers}>{passengers}</AppText>
+                                </View>
+                                <AppText style={styles.price}>{formatCurrency(cls.price)}</AppText>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+            </View>
+        );
+    };
+
     return (
-    <View style={styles.container}>
-        <ImageBackground
-        source={require('../assets/images/bg-top.png')}
-        style={styles.bgimage}>
+        <View style={styles.container}>
+            <ImageBackground
+                source={require('../assets/images/bg-top.png')}
+                style={styles.headerBg}
+                imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
+            >
+                <View style={styles.headerContent}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View>
+                        <AppText style={styles.routeText}>{origin} (KPT) {'>'} {destination} (LLG)</AppText>
+                        <AppText style={styles.dateText}>{formattedDate} • {passengers}</AppText>
+                    </View>
+                </View>
+            </ImageBackground>
 
-          <Image source={require('../assets/images/logo-top.png')} style={styles.image}></Image>
+            <View style={styles.contentContainer}>
+                <AppText style={styles.pageTitle}>Pilih Kereta Berangkat</AppText>
+                
+                <FlatList
+                    data={trains}
+                    keyExtractor={item => item.id}
+                    renderItem={renderTrainCard}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                />
+            </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
-            <AppText style={styles.title}>Masuk</AppText>
-            <AppText style={styles.subtitle}>Silahkan isi detail akun anda</AppText>
-
-            <TextInput 
-              style={styles.input}
-              placeholder="Email"
-              keyboardType="email-address"
-            />
-
-            <TextInput 
-              style={styles.input}
-              placeholder="Nomor Telepon"
-              keyboardType="phone-pad"
-            />
-
-            <TextInput 
-              style={styles.input}
-              placeholder="Password"
-              secureTextEntry={true}
-            />
-
-            <TouchableOpacity style={{marginHorizontal: 30}} onPress={() => navigation.navigate('register')}>
-                <AppText style={{color: '#F31260', marginHorizontal:10, marginBottom:20}}>Lupa Password?</AppText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('MainApp')}>
-                <AppText style={styles.textButton}>Masuk</AppText>
-            </TouchableOpacity>
-            <AppText style={styles.text}>Belum punya akun? 
-              <TouchableOpacity onPress={() => navigation.navigate('register')}>
-                <AppText style={styles.link}> Buat Disini</AppText>
-              </TouchableOpacity>
-            </AppText>
-          </View>
-
-          </ScrollView>
-
-            <StatusBar style="auto" />
-        </ImageBackground>
-    </View>
-  );
+            <StatusBar style="light" />
+        </View>
+    );
 }
-    
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bgimage: {
-    flex: 1,
-    width: '100%',
-    height: '25%',
-    resizeMode: 'cover',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: '#E4E4E7',
-    paddingBottom: 50,
-  },
-  title: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 33,
-    color: '#F31260',
-    marginTop: 20,
-    marginHorizontal: 30,
-  },
-  subtitle: {
-    fontFamily: 'PlusJakartaSans_500Medium',
-    color: '#000000',
-    marginTop: 10,
-    marginHorizontal: 30,
-    fontSize: 18,
-  },
-  image: {
-    width: 150,
-    height: 50,
-    marginTop: 60,
-    marginBottom : 20,
-    marginHorizontal: 30,
-  },
-  button: {
-    backgroundColor: '#F31260',
-    marginHorizontal: 30,
-    marginTop: 10,
-    paddingVertical: 14,
-    borderRadius: 50,
-  },
-  textButton: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    color: '#FFFFFF',
-    fontSize: 20
-  },
-  input: {
-    marginTop: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E4E4E7',
-    borderRadius: 50,
-    marginHorizontal: 30,
-    paddingHorizontal: 20,
-    height: 50,
-    fontSize: 16,
-  },
-  text: {
-    color: '#000000',
-    textAlign: 'center',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  },
-  link: {
-    color: '#F31260',
-    fontFamily: 'PlusJakartaSans_700Bold',
-    paddingTop: 5,
-    marginHorizontal: 5,
-    fontSize: 18,
-  }
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5F5',
+    },
+    headerBg: {
+        width: '100%',
+        height: 150,
+        paddingTop: 50,
+        justifyContent: 'flex-start',
+    },
+    headerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    backButton: {
+        marginRight: 15,
+    },
+    routeText: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#FFFFFF',
+    },
+    dateText: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#E0E0E0',
+        marginTop: 2,
+    },
+    contentContainer: {
+        flex: 1,
+        paddingHorizontal: 20,
+        marginTop: 20,
+    },
+    pageTitle: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 18,
+        color: '#000',
+        marginBottom: 15,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    trainName: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#000',
+    },
+    duration: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#888',
+    },
+    routeContainer: {
+        marginBottom: 15,
+    },
+    timeStation: {
+        flexDirection: 'row',
+        alignItems: 'center', // Changed to center to align dot with text
+        marginBottom: 15, // Increased spacing
+        position: 'relative',
+        paddingLeft: 20, // Space for the dot line
+    },
+    timelineDot: {
+        position: 'absolute',
+        left: 0,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#F31260',
+        zIndex: 1,
+    },
+    timelineLine: {
+        position: 'absolute',
+        left: 3, // Center of the dot (8/2 - 2/2)
+        top: 8,
+        bottom: -20, // Extend to next dot
+        width: 2,
+        backgroundColor: '#F31260',
+    },
+    time: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 16,
+        color: '#000',
+        width: 60,
+    },
+    station: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 14,
+        color: '#666',
+    },
+    expandHint: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    expandText: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#888',
+        marginRight: 5,
+    },
+    classList: {
+        marginTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#F0F0F0',
+        paddingTop: 15,
+    },
+    classItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        marginBottom: 10,
+    },
+    classType: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#000',
+        marginBottom: 2,
+    },
+    passengers: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 12,
+        color: '#000',
+    },
+    price: {
+        fontFamily: 'PlusJakartaSans_700Bold',
+        fontSize: 14,
+        color: '#000',
+    },
 });

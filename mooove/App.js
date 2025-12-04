@@ -8,6 +8,9 @@ import Account from './components/Account';
 import BookingForm from './components/BookingForm';
 import TrainList from './components/TrainList';
 import PassengerData from './components/PassengerData';
+import SeatSelection from './components/SeatSelection';
+import PaymentConfirmation from './components/PaymentConfirmation';
+import PaymentMethod from './components/PaymentMethod';
 
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -120,6 +123,24 @@ export default function App() {
         <Stack.Screen
           name="PassengerData"
           component={PassengerData}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="SeatSelection"
+          component={SeatSelection}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="PaymentConfirmation"
+          component={PaymentConfirmation}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="PaymentMethod"
+          component={PaymentMethod}
           options={{ headerShown: false }}
         />
 
