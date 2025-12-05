@@ -50,14 +50,14 @@ export default function PaymentInstruction({ navigation, route }) {
         year: 'numeric'
     });
 
-    // Calculate deadline (2 hours from now)
+    // deadline bayar 2 jam
     const deadline = new Date();
     deadline.setHours(deadline.getHours() + 2);
     const deadlineString = deadline.toLocaleDateString('id-ID', {
         day: 'numeric', month: 'long', year: 'numeric'
     }) + ' ' + deadline.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    // Calculate price
+    // hitung harga total
     const pricePerPassenger = train.price || selectedClass.price || 180000;
     const passengerCount = parseInt(passengers) || 1;
     const totalPrice = pricePerPassenger * passengerCount;
@@ -66,7 +66,7 @@ export default function PaymentInstruction({ navigation, route }) {
         return `Rp${amount.toLocaleString('id-ID')}`;
     };
 
-    const paymentCode = "202576384759091"; // Mock code
+    const paymentCode = "202576384759091"; // kode mockup rekening bayar
 
     const copyToClipboard = () => {
         Clipboard.setString(paymentCode);
@@ -84,7 +84,6 @@ export default function PaymentInstruction({ navigation, route }) {
             return;
         }
         
-        // Use allPassengers if available, otherwise fallback to passengerDetails or mock
         let passengerList = [];
         
         if (allPassengers && allPassengers.length > 0) {
@@ -368,7 +367,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#000',
     },
-    // Trip Summary Styles (Reused)
     routeText: {
         fontFamily: 'PlusJakartaSans_700Bold',
         fontSize: 14,

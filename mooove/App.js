@@ -13,6 +13,7 @@ import PaymentConfirmation from './components/PaymentConfirmation';
 import PaymentMethod from './components/PaymentMethod';
 import PaymentInstruction from './components/PaymentInstruction';
 import TicketDetail from './components/TicketDetail';
+import About from './components/About';
 
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -155,6 +156,12 @@ export default function App() {
         <Stack.Screen
           name="TicketDetail"
           component={TicketDetail}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="About"
+          component={About}
           options={{ headerShown: false }}
         />
 

@@ -53,26 +53,19 @@ export default function Home({ navigation }) {
                         <AppText style={styles.titleSmall}>Jadwal Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi jadwal perjalanan kereta</AppText>
                     </View>
-
-                    <View style={styles.smallOption}>
-                        <Image source={require('../assets/images/home-icon-3.png')} style={styles.smallIcon} />
-                        <AppText style={styles.titleSmall}>Rute & Jalur</AppText>
-                        <AppText style={styles.subtitleSmall}>Informasi rute dan jalur kereta</AppText>
-                    </View>
-                </View>
-
-                <View style={styles.rowContainer}>
                     <View style={styles.smallOption}>
                         <Image source={require('../assets/images/home-icon-4.png')} style={styles.smallIcon} />
                         <AppText style={styles.titleSmall}>Tarif Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi tarif perjalanan kereta</AppText>
                     </View>
+                </View>
 
-                    <View style={styles.smallOption}>
+                <View style={styles.rowContainer}>
+                    <TouchableOpacity style={styles.smallOption} onPress={() => navigation.navigate('About')}>
                         <Image source={require('../assets/images/home-icon-5.png')} style={styles.smallIcon} />
                         <AppText style={styles.titleSmall}>Tentang Mooove</AppText>
                         <AppText style={styles.subtitleSmall}>Mengenal tentang aplikasi Mooove</AppText>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <Image source={require('../assets/images/home-banner.png')} style={{width: '90%', height: 150, resizeMode: 'contain', alignSelf: 'center', marginTop: 30}} />

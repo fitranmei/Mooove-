@@ -18,22 +18,25 @@ export default function PassengerData({ navigation, route }) {
 
     const totalPassengers = parseInt(passengers);
     const [user, setUser] = useState(null);
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-
+    
+    const [passengerList, setPassengerList] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
-    const [additionalPassengers, setAdditionalPassengers] = useState([]);
     const [newPassenger, setNewPassenger] = useState({ name: '', id: '' });
 
     const handleAddPassenger = () => {
         if (newPassenger.name && newPassenger.id) {
-            if (additionalPassengers.length < totalPassengers - 1) {
-                setAdditionalPassengers([...additionalPassengers, newPassenger]);
+            if (passengerList.length < totalPassengers) {
+                setPassengerList([...passengerList, newPassenger]);
                 setNewPassenger({ name: '', id: '' });
                 setModalVisible(false);
             }
         }
+    };
+
+    const removePassenger = (index) => {
+        const newList = [...passengerList];
+        newList.splice(index, 1);
+        setPassengerList(newList);
     };
 
     useEffect(() => {
@@ -41,9 +44,6 @@ export default function PassengerData({ navigation, route }) {
             const userData = await getUserData();
             if (userData) {
                 setUser(userData);
-                setName(userData.fullname);
-                setEmail(userData.email);
-                if (userData.phone) setPhone(userData.phone);
             }
         };
         loadUser();
@@ -87,88 +87,73 @@ export default function PassengerData({ navigation, route }) {
                     <AppText style={styles.passengerCount}>{passengers} Orang</AppText>
                 </View>
 
-                {/* Passenger Details Card */}
+                {/* Booker Account Details Card */}
                 <View style={styles.card}>
-                    <AppText style={styles.cardTitle}>Detail Penumpang</AppText>
-
+                    <AppText style={styles.cardTitle}>Detail Akun Pemesan</AppText>
                     <View style={styles.inputGroup}>
                         <AppText style={styles.label}>NAMA</AppText>
-                        <TextInput
-                            style={styles.input}
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="Nama Lengkap"
-                        />
+                        <AppText style={styles.passengerName}>{user?.fullname || '-'}</AppText>
                     </View>
-
                     <View style={styles.inputGroup}>
                         <AppText style={styles.label}>EMAIL</AppText>
-                        <TextInput
-                            style={styles.input}
-                            value={email}
-                            onChangeText={setEmail}
-                            placeholder="Email"
-                            keyboardType="email-address"
-                        />
+                        <AppText style={styles.passengerName}>{user?.email || '-'}</AppText>
                     </View>
-
-                    <View style={styles.inputGroup}>
-                        <AppText style={styles.label}>NO. TELPON</AppText>
-                        <TextInput
-                            style={styles.input}
-                            value={phone}
-                            onChangeText={setPhone}
-                            placeholder="Nomor Telepon"
-                            keyboardType="phone-pad"
-                        />
-                    </View>
-
-                    <View style={styles.infoBox}>
-                        <AppText style={styles.infoText}>Informasi mengenai tiket akan dikirim ke kontak tertera</AppText>
+                     <View style={styles.infoBox}>
+                        <AppText style={styles.infoText}>Informasi mengenai tiket akan dikirim ke email tertera</AppText>
                     </View>
                 </View>
 
-                {additionalPassengers.map((p, index) => (
-                    <View key={index} style={styles.card}>
-                        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-                            <View>
-                                <AppText style={styles.label}>PENUMPANG TAMBAHAN {index + 1}</AppText>
-                                <AppText style={styles.passengerName}>{p.name}</AppText>
-                                <AppText style={styles.passengerId}>{p.id}</AppText>
-                            </View>
-                            <TouchableOpacity onPress={() => {
-                                const newList = [...additionalPassengers];
-                                newList.splice(index, 1);
-                                setAdditionalPassengers(newList);
-                            }}>
-                                <Ionicons name="trash-outline" size={24} color="#F31260" />
-                            </TouchableOpacity>
+                {/* Passenger Slots */}
+                {[...Array(totalPassengers)].map((_, index) => {
+                    const passenger = passengerList[index];
+                    return (
+                        <View key={index} style={styles.card}>
+                            <AppText style={styles.cardTitle}>Detail Penumpang {index + 1}</AppText>
+                            
+                            {passenger ? (
+                                <View>
+                                    <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                                        <View style={{flex: 1}}>
+                                            <View style={styles.inputGroup}>
+                                                <AppText style={styles.label}>NAMA</AppText>
+                                                <AppText style={styles.passengerName}>{passenger.name}</AppText>
+                                            </View>
+                                            <View style={styles.inputGroup}>
+                                                <AppText style={styles.label}>NOMOR IDENTITAS (KTP)</AppText>
+                                                <AppText style={styles.passengerName}>{passenger.id}</AppText>
+                                            </View>
+                                        </View>
+                                        <TouchableOpacity onPress={() => removePassenger(index)}>
+                                            <Ionicons name="trash-outline" size={24} color="#F31260" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ) : (
+                                <TouchableOpacity style={styles.outlineButton} onPress={() => setModalVisible(true)}>
+                                    <AppText style={styles.outlineButtonText}>Isi Data Penumpang</AppText>
+                                </TouchableOpacity>
+                            )}
                         </View>
-                    </View>
-                ))}
+                    );
+                })}
 
-                {additionalPassengers.length < totalPassengers - 1 && (
-                    <TouchableOpacity style={styles.outlineButton} onPress={() => setModalVisible(true)}>
-                        <AppText style={styles.outlineButtonText}>Tambah Penumpang Lain</AppText>
-                    </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={styles.primaryButton} onPress={() => {
-                    const allPassengers = [
-                        { name, email, phone, type: 'Dewasa', id: user?.id || '-' }, // Main passenger
-                        ...additionalPassengers.map(p => ({ ...p, type: 'Dewasa' }))
-                    ];
-                    
-                    navigation.navigate('SeatSelection', {
-                        train,
-                        selectedClass,
-                        origin,
-                        destination,
-                        date,
-                        passengers,
-                        allPassengers
-                    });
-                }}>
+                <TouchableOpacity 
+                    style={[styles.primaryButton, { opacity: passengerList.length === totalPassengers ? 1 : 0.5 }]} 
+                    disabled={passengerList.length !== totalPassengers}
+                    onPress={() => {
+                        const allPassengers = passengerList.map(p => ({ ...p, type: 'Dewasa' }));
+                        
+                        navigation.navigate('SeatSelection', {
+                            train,
+                            selectedClass,
+                            origin,
+                            destination,
+                            date,
+                            passengers,
+                            allPassengers
+                        });
+                    }}
+                >
                     <AppText style={styles.primaryButtonText}>Lanjutkan</AppText>
                 </TouchableOpacity>
 
@@ -199,12 +184,13 @@ export default function PassengerData({ navigation, route }) {
                             onChangeText={(text) => setNewPassenger({...newPassenger, name: text})}
                         />
 
-                        <AppText style={styles.inputLabel}>Nomor ID / Email</AppText>
+                        <AppText style={styles.inputLabel}>Nomor Identitas (KTP)</AppText>
                         <TextInput 
                             style={styles.input}
-                            placeholder="Masukkan No. KTP atau Email"
+                            placeholder="Masukkan No. KTP"
                             value={newPassenger.id}
                             onChangeText={(text) => setNewPassenger({...newPassenger, id: text})}
+                            keyboardType="numeric"
                         />
 
                         <TouchableOpacity style={styles.saveButton} onPress={handleAddPassenger}>

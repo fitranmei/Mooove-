@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
 
 export default function TicketDetail({ route, navigation }) {
-    // Fallback data if not passed
     const { 
         bookingCode = 'KJB75AU',
         train = { name: 'SINDANG MARGA S1', departureTime: '09:00', arrivalTime: '15:25' },
@@ -17,7 +16,6 @@ export default function TicketDetail({ route, navigation }) {
         selectedClass = { type: 'BISNIS' }
     } = route.params || {};
 
-    // Use allPassengers if available, otherwise use paramPassengers if it is an array
     const initialPassengers = allPassengers || (Array.isArray(paramPassengers) ? paramPassengers : []);
 
     const [passengers, setPassengers] = useState(initialPassengers);

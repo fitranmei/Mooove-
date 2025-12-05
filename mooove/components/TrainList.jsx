@@ -19,7 +19,7 @@ export default function TrainList({ navigation, route }) {
         year: 'numeric'
     });
 
-    // Mock Data
+    // data mockup
     const trains = [
         {
             id: 'S1',
@@ -233,10 +233,10 @@ const styles = StyleSheet.create({
     },
     timeStation: {
         flexDirection: 'row',
-        alignItems: 'center', // Changed to center to align dot with text
-        marginBottom: 15, // Increased spacing
+        alignItems: 'center',
+        marginBottom: 15,
         position: 'relative',
-        paddingLeft: 20, // Space for the dot line
+        paddingLeft: 20,
     },
     timelineDot: {
         position: 'absolute',
@@ -251,9 +251,9 @@ const styles = StyleSheet.create({
     },
     timelineLine: {
         position: 'absolute',
-        left: 3, // Center of the dot (8/2 - 2/2)
+        left: 3,
         top: 8,
-        bottom: -20, // Extend to next dot
+        bottom: -20,
         width: 2,
         backgroundColor: '#F31260',
     },

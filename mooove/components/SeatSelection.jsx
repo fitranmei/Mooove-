@@ -55,8 +55,7 @@ export default function SeatSelection({ navigation, route }) {
             if (selectedSeats.length < totalPassengers) {
                 setSelectedSeats([...selectedSeats, seatId]);
             } else {
-                // Optional: Alert user that max seats selected
-                // Alert.alert('Info', `Anda hanya dapat memilih ${totalPassengers} kursi.`);
+                
             }
         }
     };
