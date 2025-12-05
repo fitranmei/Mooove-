@@ -68,5 +68,9 @@ func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 			"reserved_until":      gorm.Expr("NULL"),
 			"updated_at":          now,
 		})
-	return res.Error
+
+	if res.Error != nil {
+		return res.Error
+	}
+	return nil
 }

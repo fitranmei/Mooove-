@@ -24,47 +24,72 @@ func main() {
 
 	db.RunMigrations(database)
 
+	// Background job untuk auto-release reserved seat
 	ctx, cancel := context.WithCancel(context.Background())
 	services.StartReservedCleanup(ctx, database, 1*time.Minute)
 
-	// Inisialisasi repositori
+	// ============================
+	// Repositories
+	// ============================
 	repoStasiun := repositories.NewStasiunRepo(database)
 	repoKereta := repositories.NewKeretaRepo(database)
 	repoJadwal := repositories.NewJadwalRepo(database)
+	repoGerbong := repositories.NewGerbongRepo(database)
+	repoKursi := repositories.NewKursiRepo(database)
+
 	authRepo := repositories.NewAuthRepo(database)
-	authService := services.NewAuthServiceImpl(authRepo, cfg.JwtSecret, time.Hour*24)
-	gerbongRepo := repositories.NewGerbongRepo(database)
-	kursiRepo := repositories.NewKursiRepo(database)
 	bookingRepo := repositories.NewBookingRepo(database)
 	ketersediaanRepo := repositories.NewKetersediaanRepo(database)
+	paymentRepo := repositories.NewPaymentRepo(database)
+	tiketRepo := repositories.NewTiketRepo(database)
 
+	// ============================
+	// Services
+	// ============================
+	authService := services.NewAuthServiceImpl(authRepo, cfg.JwtSecret, 24*time.Hour)
+
+	// BookingService dipakai oleh PaymentService
+	bookingService := services.NewBookingService(database, bookingRepo, ketersediaanRepo)
+
+	// PaymentService menerima bookingService
+	paymentService := services.NewPaymentService(cfg, paymentRepo, bookingService)
+
+	// ============================
+	// Init Handlers
+	// ============================
 	handlers.InitHandlers(
 		repoStasiun,
 		repoKereta,
 		repoJadwal,
-		ketersediaanRepo,
 		bookingRepo,
+		ketersediaanRepo,
+		paymentRepo,
+		tiketRepo,
 		authService,
+		paymentService,
 		database,
 	)
 
 	handlers.InitGerbongHandler(
-		gerbongRepo,
-		kursiRepo,
+		repoGerbong,
+		repoKursi,
 		database,
 	)
 
+	// ============================
+	// Fiber setup
+	// ============================
 	app := fiber.New()
 	app.Use(logger.New())
 
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+
 	go func() {
 		<-quit
 		log.Println("shutting down...")
-		// hentikan background job
 		cancel()
-		// beri waktu untuk shutdown server (opsional)
 		_ = app.Shutdown()
 	}()
 

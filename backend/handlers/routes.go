@@ -3,18 +3,23 @@ package handlers
 import (
 	"github.com/fitranmei/Mooove-/backend/middlewares"
 	"github.com/fitranmei/Mooove-/backend/models"
+	"github.com/fitranmei/Mooove-/backend/services"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 var (
-	repoStasiun       StasiunRepoInterface
-	repoKereta        KeretaRepoInterface
-	repoJadwal        JadwalRepoInterface
-	repoKetersediaan  KetersediaanRepoInterface
-	repoBooking       BookingRepoInterface
+	repoStasiun      StasiunRepoInterface
+	repoKereta       KeretaRepoInterface
+	repoJadwal       JadwalRepoInterface
+	repoBooking      BookingRepoInterface
+	repoKetersediaan KetersediaanRepoInterface
+	repoPayment      PaymentRepoInterface
+
 	authServiceGlobal models.AuthService
-	dbConn            *gorm.DB
+	paymentSvc        *services.PaymentService // <--- TAMBAH INI
+
+	dbConn *gorm.DB
 )
 
 type StasiunRepoInterface interface {
@@ -54,21 +59,35 @@ type BookingRepoInterface interface {
 	SimpanUpdate(tx *gorm.DB, b *models.Booking) error
 }
 
+type PaymentRepoInterface interface {
+	Create(tx *gorm.DB, p *models.Payment) error
+	FindByProviderID(pid string) (*models.Payment, error)
+	Save(tx *gorm.DB, p *models.Payment) error
+}
+
 func InitHandlers(
 	stasiunRepo StasiunRepoInterface,
 	keretaRepo KeretaRepoInterface,
 	jadwalRepo JadwalRepoInterface,
-	ketersediaanRepo KetersediaanRepoInterface,
 	bookingRepo BookingRepoInterface,
+	ketersediaanRepo KetersediaanRepoInterface,
+	paymentRepo PaymentRepoInterface,
+	tiketRepo TiketRepoInterface,
 	authSvc models.AuthService,
+	paySvc *services.PaymentService,
 	db *gorm.DB,
 ) {
 	repoStasiun = stasiunRepo
 	repoKereta = keretaRepo
 	repoJadwal = jadwalRepo
-	repoKetersediaan = ketersediaanRepo
 	repoBooking = bookingRepo
+	repoKetersediaan = ketersediaanRepo
+	repoPayment = paymentRepo
+	repoTiket = tiketRepo
+
 	authServiceGlobal = authSvc
+	paymentSvc = paySvc // <-- penting
+
 	dbConn = db
 }
 
@@ -142,5 +161,14 @@ func RegisterRoutes(app *fiber.App) {
 	api.Delete("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.DeleteBooking)
 
 	// Webhook provider pembayaran (public, idempotent)
-	api.Post("/payments/webhook", hBooking.PaymentWebhook)
+	// PAYMENT
+	api.Post("/bookings/:id/pay", middlewares.AuthProtected(dbConn), hBooking.CreatePaymentForBooking)
+	api.Post("/payments/webhook", hBooking.PaymentWebhook) // Midtrans tidak pakai auth JWTs
+
+	// TIket
+	tiketHandler := NewTiketHandler(dbConn, repoTiket)
+	api.Get("/tiket/:id", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByID)
+	api.Get("/booking/:id/tiket", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByBooking)
+	api.Get("/user/tiket", middlewares.AuthProtected(dbConn), tiketHandler.ListTiketUser)
+
 }
