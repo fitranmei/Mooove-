@@ -13,6 +13,11 @@ func RunMigrations(db *gorm.DB) {
 		&models.Stasiun{},
 		&models.Kereta{},
 		&models.Jadwal{},
+		&models.Gerbong{},
+		&models.Kursi{},
+		&models.KetersediaanKursi{},
+		&models.Booking{},
+		&models.Penumpang{},
 	); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}

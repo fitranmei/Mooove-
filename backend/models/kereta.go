@@ -7,4 +7,5 @@ type Kereta struct {
 	Nama      string    `json:"nama"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Gerbongs  []Gerbong `gorm:"foreignKey:KeretaID" json:"gerbongs"`
 }
