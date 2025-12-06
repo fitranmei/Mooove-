@@ -6,7 +6,7 @@ const BASE_URL = Platform.OS === 'android'
     : process.env.EXPO_PUBLIC_API_URL_LOCAL;
 
 const api = axios.create({
-    baseURL: BASE_URL || 'http://10.0.2.2:8080', // Fallback for Android Emulator
+    baseURL: BASE_URL || 'http://10.0.2.2:8080',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -21,7 +21,6 @@ api.interceptors.request.use(request => {
 export const getStations = async () => {
     try {
         const response = await api.get('/stasiun');
-        // Handle if response is directly the array or wrapped in data
         return Array.isArray(response.data) ? response.data : response.data.data; 
     } catch (error) {
         console.error("Error fetching stations:", error);
@@ -31,21 +30,31 @@ export const getStations = async () => {
 
 export const getSchedules = async (origin, destination, date) => {
     try {
-        // Format date to YYYY-MM-DD
         const dateObj = new Date(date);
         const dateStr = dateObj.toISOString().split('T')[0];
         
-        const response = await api.get('/schedules', {
+        const response = await api.get('/jadwal', {
             params: {
                 origin,
                 destination,
                 date: dateStr
             }
         });
-        return response.data.data; // Adjust based on actual BE response structure
+        // Handle if response is directly the array or wrapped in data
+        return Array.isArray(response.data) ? response.data : response.data.data;
     } catch (error) {
         console.error("Error fetching schedules:", error);
         return [];
+    }
+};
+
+export const getScheduleSeats = async (scheduleId) => {
+    try {
+        const response = await api.get(`/jadwal/${scheduleId}/kursi`);
+        return response.data; // Returns the full object structure directly
+    } catch (error) {
+        console.error("Error fetching schedule seats:", error);
+        return null;
     }
 };
 

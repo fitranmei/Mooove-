@@ -27,25 +27,57 @@ export default function TrainList({ navigation, route }) {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            // Gunakan ID jika ada, jika tidak gunakan nama (fallback)
             const o = originId || origin;
             const d = destinationId || destination;
             
             const data = await getSchedules(o, d, date);
             
             if (data && Array.isArray(data)) {
-                // Mapping data backend ke format UI
-                const mapped = data.map(item => ({
-                    id: item.id,
-                    name: item.train?.name || item.train_name || 'Kereta',
-                    duration: item.duration || '-', 
-                    departureTime: item.departure_time?.substring(0, 5) || item.departureTime,
-                    departureStation: `${origin}`,
-                    arrivalTime: item.arrival_time?.substring(0, 5) || item.arrivalTime,
-                    arrivalStation: `${destination}`,
-                    classes: item.classes || [] // Pastikan backend mengirim array classes
-                }));
-                setTrains(mapped);
+                const grouped = {};
+
+                data.forEach(item => {
+                    // Skip if train data is missing
+                    if (!item.kereta) return;
+
+                    // Group by Train ID and Departure Time
+                    const key = `${item.kereta.id}_${item.waktu_berangkat}`;
+                    
+                    if (!grouped[key]) {
+                        // Calculate duration
+                        const start = new Date(item.waktu_berangkat);
+                        const end = new Date(item.waktu_tiba);
+                        const diffMs = end - start;
+                        const diffHrs = Math.floor(diffMs / 3600000);
+                        const diffMins = Math.round((diffMs % 3600000) / 60000);
+                        const duration = `${diffHrs}j ${diffMins}m`;
+
+                        // Format time HH:mm
+                        const formatTime = (dateStr) => {
+                            const d = new Date(dateStr);
+                            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
+                        };
+
+                        grouped[key] = {
+                            id: key, // Unique ID for the UI card
+                            name: item.kereta.nama,
+                            trainId: item.kereta.id,
+                            duration: duration,
+                            departureTime: formatTime(item.waktu_berangkat),
+                            departureStation: item.asal ? `${item.asal.nama} (${item.asal.kode})` : `${origin}`,
+                            arrivalTime: formatTime(item.waktu_tiba),
+                            arrivalStation: item.tujuan ? `${item.tujuan.nama} (${item.tujuan.kode})` : `${destination}`,
+                            classes: []
+                        };
+                    }
+                    
+                    grouped[key].classes.push({
+                        type: item.kelas,
+                        price: item.harga_dasar,
+                        scheduleId: item.id // Important: This is the ID for booking
+                    });
+                });
+
+                setTrains(Object.values(grouped));
             } else {
                 setTrains([]);
             }
@@ -141,8 +173,8 @@ export default function TrainList({ navigation, route }) {
                         <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
                     </TouchableOpacity>
                     <View>
-                        <AppText style={styles.routeText}>{origin} (KPT) {'>'} {destination} (LLG)</AppText>
-                        <AppText style={styles.dateText}>{formattedDate} • {passengers}</AppText>
+                        <AppText style={styles.routeText}>{origin} {'>'} {destination}</AppText>
+                        <AppText style={styles.dateText}>{formattedDate} • {passengers} Penumpang</AppText>
                     </View>
                 </View>
             </ImageBackground>

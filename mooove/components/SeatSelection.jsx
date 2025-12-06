@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import { getScheduleSeats } from '../services/api';
 
 export default function SeatSelection({ navigation, route }) {
     const { train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers } = route.params || {
@@ -24,22 +25,90 @@ export default function SeatSelection({ navigation, route }) {
         year: 'numeric'
     });
 
-    const initialSeats = [
-        { row: 1, seats: [1, 1, 0, 0] },
-        { row: 2, seats: [1, 1, 0, 2] },
-        { row: 3, seats: [1, 1, 1, 1] },
-        { row: 4, seats: [1, 0, 1, 1] },
-        { row: 5, seats: [1, 1, 1, 0] },
-        { row: 6, seats: [0, 0, 1, 1] },
-        { row: 7, seats: [1, 1, 0, 0] },
-    ];
-
-    const [seats, setSeats] = useState(initialSeats);
+    const [seats, setSeats] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedSeats, setSelectedSeats] = useState([]);
-    const [selectedCarriage, setSelectedCarriage] = useState('Bisnis 1');
+    const [carriages, setCarriages] = useState([]);
+    const [selectedCarriage, setSelectedCarriage] = useState(null);
+    const [allData, setAllData] = useState(null); // Store full response
 
-    const carriages = ['Bisnis 1', 'Bisnis 2', 'Bisnis 3'];
     const columns = ['A', 'B', 'C', 'D'];
+
+    // Fetch All Data (Schedule + Carriages + Seats)
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!selectedClass.scheduleId) {
+                // Fallback for testing/mock
+                setCarriages([{id: 1, nomor_gerbong: 1, kelas: 'Eksekutif'}]);
+                setSelectedCarriage(1);
+                setLoading(false);
+                return;
+            }
+
+            setLoading(true);
+            const data = await getScheduleSeats(selectedClass.scheduleId);
+            
+            if (data && data.gerbongs) {
+                setAllData(data);
+                setCarriages(data.gerbongs);
+                if (data.gerbongs.length > 0) {
+                    setSelectedCarriage(data.gerbongs[0].id);
+                }
+            }
+            setLoading(false);
+        };
+        fetchData();
+    }, [selectedClass.scheduleId]);
+
+    // Update grid when selectedCarriage changes
+    useEffect(() => {
+        if (!selectedCarriage || !allData) return;
+
+        const currentCarriage = allData.gerbongs.find(g => g.id === selectedCarriage);
+        if (!currentCarriage) return;
+
+        const carriageSeats = currentCarriage.kursi || [];
+        
+        // Calculate max row from data
+        let maxRow = 0;
+        carriageSeats.forEach(s => {
+             // Assuming nomor_kursi is like "1A", "10B"
+             const match = s.nomor_kursi.match(/^(\d+)[A-Z]$/);
+             if (match) {
+                 const r = parseInt(match[1]);
+                 if (r > maxRow) maxRow = r;
+             }
+        });
+        if (maxRow === 0) maxRow = 15; // Fallback
+
+        // Transform to grid: [{ row: 1, seats: [0, 1, 0, 0] }, ...]
+        const grid = [];
+
+        for (let r = 1; r <= maxRow; r++) {
+            const rowSeats = [0, 0, 0, 0]; // A, B, C, D (0: available, 1: occupied)
+            
+            columns.forEach((col, colIndex) => {
+                const seatNum = `${r}${col}`;
+                const seatData = carriageSeats.find(s => s.nomor_kursi === seatNum);
+                
+                if (seatData) {
+                    const isOccupied = seatData.status && seatData.status !== 'available';
+                    rowSeats[colIndex] = isOccupied ? 1 : 0;
+                } else {
+                    rowSeats[colIndex] = 2; // 2 for 'not exists'
+                }
+            });
+            
+            // Only add row if it has at least one real seat
+            if (rowSeats.some(s => s !== 2)) {
+                 grid.push({ row: r, seats: rowSeats.map(s => s === 2 ? 0 : s) });
+            }
+        }
+        
+        setSeats(grid);
+
+    }, [selectedCarriage, allData]);
+
 
     const handleSeatPress = (rowIndex, colIndex) => {
         const seatStatus = seats[rowIndex].seats[colIndex];
@@ -54,8 +123,6 @@ export default function SeatSelection({ navigation, route }) {
         } else {
             if (selectedSeats.length < totalPassengers) {
                 setSelectedSeats([...selectedSeats, seatId]);
-            } else {
-                
             }
         }
     };
@@ -126,14 +193,14 @@ export default function SeatSelection({ navigation, route }) {
                             key={index} 
                             style={[
                                 styles.carriageButton, 
-                                selectedCarriage === carriage && styles.carriageButtonSelected
+                                selectedCarriage === carriage.id && styles.carriageButtonSelected
                             ]}
-                            onPress={() => setSelectedCarriage(carriage)}
+                            onPress={() => setSelectedCarriage(carriage.id)}
                         >
                             <AppText style={[
                                 styles.carriageText,
-                                selectedCarriage === carriage && styles.carriageTextSelected
-                            ]}>{carriage}</AppText>
+                                selectedCarriage === carriage.id && styles.carriageTextSelected
+                            ]}>{`Gerbong ${carriage.nomor_gerbong}`}</AppText>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
