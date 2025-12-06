@@ -64,6 +64,7 @@ func main() {
 		bookingRepo,
 		ketersediaanRepo,
 		paymentRepo,
+		repoGerbong,
 		tiketRepo,
 		authService,
 		paymentService,

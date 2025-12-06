@@ -71,11 +71,11 @@ func (h *PaymentHandler) MidtransWebhook(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := h.paymentService.HandleWebhook(c.Context(), notif); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
+	// if err := h.paymentService.HandleWebhook(c.Context(), notif); err != nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": err.Error(),
+	// 	})
+	// }
 
 	return c.JSON(fiber.Map{"status": "ok"})
 }

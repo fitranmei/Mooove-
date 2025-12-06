@@ -19,6 +19,9 @@ type KetersediaanRepo interface {
 
 	// Melepaskan semua ketersediaan kursi yang di-reserved oleh booking tertentu
 	ReleaseByBooking(tx *gorm.DB, bookingID uint) error
+
+	// Ambil semua data KetersediaanKursi untuk schedule tertentu
+	GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error)
 }
 
 type ketersediaanRepo struct {
@@ -73,4 +76,13 @@ func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 		return res.Error
 	}
 	return nil
+}
+
+// GetBySchedule mengambil semua data ketersediaan untuk jadwal tertentu (tanpa locking)
+func (r *ketersediaanRepo) GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error) {
+	var list []models.KetersediaanKursi
+	if err := r.db.Where("train_schedule_id = ?", scheduleID).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
 }

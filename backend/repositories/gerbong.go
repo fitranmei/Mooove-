@@ -11,6 +11,7 @@ type GerbongRepo interface {
 	Buat(g *models.Gerbong) error
 	GetByID(id uint) (*models.Gerbong, error)
 	ListByKereta(keretaID uint) ([]models.Gerbong, error)
+	ListByKeretaAndKelas(keretaID uint, kelas string) ([]models.Gerbong, error)
 	ListSemua() ([]models.Gerbong, error)
 	Update(g *models.Gerbong) error
 	Delete(id uint) error
@@ -40,6 +41,19 @@ func (r *gerbongRepo) GetByID(id uint) (*models.Gerbong, error) {
 func (r *gerbongRepo) ListByKereta(keretaID uint) ([]models.Gerbong, error) {
 	var list []models.Gerbong
 	if err := r.db.Where("kereta_id = ?", keretaID).
+		Order("nomor_gerbong asc").
+		Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// ListByKeretaAndKelas mengembalikan gerbong spesifik untuk kereta dan kelas tertentu
+func (r *gerbongRepo) ListByKeretaAndKelas(keretaID uint, kelas string) ([]models.Gerbong, error) {
+	var list []models.Gerbong
+	// Preload Kursis agar langsung dapat data kursinya
+	if err := r.db.Where("kereta_id = ? AND kelas = ?", keretaID, kelas).
+		Preload("Kursis").
 		Order("nomor_gerbong asc").
 		Find(&list).Error; err != nil {
 		return nil, err

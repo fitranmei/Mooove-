@@ -13,12 +13,18 @@ import (
 
 // HandlerJadwal menangani endpoint terkait jadwal
 type HandlerJadwal struct {
-	repo repositories.JadwalRepo
+	repo             repositories.JadwalRepo
+	gerbongRepo      repositories.GerbongRepo
+	ketersediaanRepo repositories.KetersediaanRepo
 }
 
 // NewHandlerJadwal membuat instance handler jadwal
-func NewHandlerJadwal(repo repositories.JadwalRepo, db *gorm.DB) *HandlerJadwal {
-	return &HandlerJadwal{repo: repo}
+func NewHandlerJadwal(repo repositories.JadwalRepo, gerbongRepo repositories.GerbongRepo, ketersediaanRepo repositories.KetersediaanRepo, db *gorm.DB) *HandlerJadwal {
+	return &HandlerJadwal{
+		repo:             repo,
+		gerbongRepo:      gerbongRepo,
+		ketersediaanRepo: ketersediaanRepo,
+	}
 }
 
 // Payload untuk membuat jadwal
@@ -163,5 +169,79 @@ func (h *HandlerJadwal) CariJadwal(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"count": len(results),
 		"data":  results,
+	})
+}
+
+// GetKursiByJadwal GET /api/v1/jadwal/:id/kursi
+func (h *HandlerJadwal) GetKursiByJadwal(c *fiber.Ctx) error {
+	id, _ := strconv.Atoi(c.Params("id"))
+	jadwalID := uint(id)
+
+	// 1. Ambil data jadwal untuk tahu KeretaID dan Kelas
+	jadwal, err := h.repo.GetByID(jadwalID)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "jadwal tidak ditemukan"})
+	}
+
+	// 2. Ambil gerbong yang sesuai dengan KeretaID DAN Kelas jadwal
+	gerbongs, err := h.gerbongRepo.ListByKeretaAndKelas(jadwal.KeretaID, jadwal.Kelas)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "gagal mengambil data gerbong"})
+	}
+
+	// 3. Ambil data ketersediaan (booked/reserved) untuk jadwal ini
+	ketersediaan, err := h.ketersediaanRepo.GetBySchedule(jadwalID)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "gagal mengambil data ketersediaan"})
+	}
+
+	// Map status ketersediaan by SeatID untuk lookup cepat
+	statusMap := make(map[uint]string)
+	for _, k := range ketersediaan {
+		statusMap[k.SeatID] = k.Status
+	}
+
+	// 4. Susun response
+	type SeatResp struct {
+		ID         uint   `json:"id"`
+		NomorKursi string `json:"nomor_kursi"`
+		Status     string `json:"status"` // available, booked, reserved
+	}
+
+	type GerbongResp struct {
+		ID           uint       `json:"id"`
+		NomorGerbong int        `json:"nomor_gerbong"`
+		Kelas        string     `json:"kelas"`
+		Kursi        []SeatResp `json:"kursi"`
+	}
+
+	var gerbongResps []GerbongResp
+
+	for _, g := range gerbongs {
+		var seats []SeatResp
+		for _, k := range g.Kursis {
+			status := "available"
+			if s, ok := statusMap[k.ID]; ok {
+				status = s
+			}
+			seats = append(seats, SeatResp{
+				ID:         k.ID,
+				NomorKursi: k.NomorKursi,
+				Status:     status,
+			})
+		}
+
+		gerbongResps = append(gerbongResps, GerbongResp{
+			ID:           g.ID,
+			NomorGerbong: g.NomorGerbong,
+			Kelas:        g.Kelas,
+			Kursi:        seats,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"jadwal_id": jadwalID,
+		"kereta":    jadwal.Kereta,
+		"gerbongs":  gerbongResps,
 	})
 }

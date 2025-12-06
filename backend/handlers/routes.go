@@ -15,9 +15,10 @@ var (
 	repoBooking      BookingRepoInterface
 	repoKetersediaan KetersediaanRepoInterface
 	repoPayment      PaymentRepoInterface
+	repoGerbong      GerbongRepoInterface // <--- TAMBAH INI
 
 	authServiceGlobal models.AuthService
-	paymentSvc        *services.PaymentService // <--- TAMBAH INI
+	paymentSvc        *services.PaymentService
 
 	dbConn *gorm.DB
 )
@@ -51,6 +52,17 @@ type KetersediaanRepoInterface interface {
 	FindAndLockBySchedule(tx *gorm.DB, scheduleID uint, seatIDs []uint) ([]models.KetersediaanKursi, error)
 	MarkReserved(tx *gorm.DB, inventoryIDs []uint, bookingID uint) error
 	ReleaseByBooking(tx *gorm.DB, bookingID uint) error
+	GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error)
+}
+
+type GerbongRepoInterface interface {
+	Buat(g *models.Gerbong) error
+	GetByID(id uint) (*models.Gerbong, error)
+	ListByKereta(keretaID uint) ([]models.Gerbong, error)
+	ListSemua() ([]models.Gerbong, error)
+	Update(g *models.Gerbong) error
+	Delete(id uint) error
+	ListByKeretaAndKelas(keretaID uint, kelas string) ([]models.Gerbong, error)
 }
 
 type BookingRepoInterface interface {
@@ -72,6 +84,7 @@ func InitHandlers(
 	bookingRepo BookingRepoInterface,
 	ketersediaanRepo KetersediaanRepoInterface,
 	paymentRepo PaymentRepoInterface,
+	gerbongRepo GerbongRepoInterface,
 	tiketRepo TiketRepoInterface,
 	authSvc models.AuthService,
 	paySvc *services.PaymentService,
@@ -83,7 +96,8 @@ func InitHandlers(
 	repoBooking = bookingRepo
 	repoKetersediaan = ketersediaanRepo
 	repoPayment = paymentRepo
-	repoTiket = tiketRepo
+	repoGerbong = gerbongRepo
+	// repoTiket = tiketRepo
 
 	authServiceGlobal = authSvc
 	paymentSvc = paySvc // <-- penting
@@ -132,12 +146,13 @@ func RegisterRoutes(app *fiber.App) {
 	// -----------------------
 	// JADWAL (publik)
 	// -----------------------
-	jadwalHandler := NewHandlerJadwal(repoJadwal, dbConn)
+	jadwalHandler := NewHandlerJadwal(repoJadwal, repoGerbong, repoKetersediaan, dbConn)
 	api.Get("/jadwal", jadwalHandler.ListSemua)
 	api.Get("/jadwal/:id", jadwalHandler.GetByID)
 	api.Post("/jadwal", jadwalHandler.Buat)
 	api.Delete("/jadwal/:id", jadwalHandler.Hapus)
 	api.Get("/jadwal/cari", jadwalHandler.CariJadwal) // ?asal=GMR&tujuan=BDG&tanggal=YYYY-MM-DD
+	api.Get("/jadwal/:id/kursi", jadwalHandler.GetKursiByJadwal)
 
 	// -----------------------
 	// GERBONG & KURSI
@@ -166,9 +181,9 @@ func RegisterRoutes(app *fiber.App) {
 	api.Post("/payments/webhook", hBooking.PaymentWebhook) // Midtrans tidak pakai auth JWTs
 
 	// TIket
-	tiketHandler := NewTiketHandler(dbConn, repoTiket)
-	api.Get("/tiket/:id", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByID)
-	api.Get("/booking/:id/tiket", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByBooking)
-	api.Get("/user/tiket", middlewares.AuthProtected(dbConn), tiketHandler.ListTiketUser)
+	// tiketHandler := NewTiketHandler(dbConn, repoTiket)
+	// api.Get("/tiket/:id", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByID)
+	// api.Get("/booking/:id/tiket", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByBooking)
+	// api.Get("/user/tiket", middlewares.AuthProtected(dbConn), tiketHandler.ListTiketUser)
 
 }
