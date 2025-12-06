@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = Platform.OS === 'android' 
     ? process.env.EXPO_PUBLIC_API_URL_ANDROID 
@@ -12,9 +13,15 @@ const api = axios.create({
     },
 });
 
-// Log requests for debugging
-api.interceptors.request.use(request => {
+// Log requests for debugging and add Auth Token
+api.interceptors.request.use(async (request) => {
     console.log('Starting Request:', request.method.toUpperCase(), request.baseURL + request.url);
+    
+    const token = await AsyncStorage.getItem('userToken');
+    if (token) {
+        request.headers.Authorization = `Bearer ${token}`;
+    }
+
     return request;
 });
 
@@ -54,6 +61,32 @@ export const getScheduleSeats = async (scheduleId) => {
         return response.data; // Returns the full object structure directly
     } catch (error) {
         console.error("Error fetching schedule seats:", error);
+        return null;
+    }
+};
+
+export const createBooking = async (bookingData) => {
+    try {
+        const response = await api.post('/bookings', bookingData);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating booking:", error);
+        if (error.response) {
+            console.error("Error Response Data:", JSON.stringify(error.response.data, null, 2));
+        }
+        return null;
+    }
+};
+
+export const payBooking = async (bookingId) => {
+    try {
+        const response = await api.post(`/bookings/${bookingId}/pay`);
+        return response.data;
+    } catch (error) {
+        console.error("Error initiating payment:", error);
+        if (error.response) {
+            console.error("Error Response Data:", JSON.stringify(error.response.data, null, 2));
+        }
         return null;
     }
 };

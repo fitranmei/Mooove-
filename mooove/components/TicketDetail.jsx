@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ImageBackground, TouchableOpacity, ScrollView, Image, Modal, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ImageBackground, TouchableOpacity, ScrollView, Image, Modal, TextInput, Alert, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
@@ -22,6 +22,21 @@ export default function TicketDetail({ route, navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPassenger, setSelectedPassenger] = useState(null);
 
+    // Handle hardware back button to go Home
+    useEffect(() => {
+        const backAction = () => {
+            navigation.navigate('MainApp', { screen: 'home' });
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [navigation]);
+
     const handlePrintTicket = (passenger) => {
         setSelectedPassenger(passenger);
         setModalVisible(true);
@@ -37,7 +52,7 @@ export default function TicketDetail({ route, navigation }) {
                     imageStyle={{ opacity: 0.8 }}
                 >
                     <View style={styles.headerContent}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <TouchableOpacity onPress={() => navigation.navigate('MainApp', { screen: 'home' })} style={styles.backButton}>
                             <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
                         </TouchableOpacity>
                         <AppText style={styles.pageTitle}>Detail Tiket</AppText>

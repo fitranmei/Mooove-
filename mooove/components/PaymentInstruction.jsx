@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard } from 'react-native';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard, Modal, ActivityIndicator, BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import AppText from './AppText';
+import { payBooking } from '../services/api';
 
 export default function PaymentInstruction({ navigation, route }) {
-    const { train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod } = route.params || {
+    const { bookingId, train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod } = route.params || {
         // Mock data
+        bookingId: null,
         train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25', price: 180000 },
         selectedClass: { type: 'BISNIS', price: 180000 },
         origin: 'KERTAPATI',
@@ -22,6 +25,24 @@ export default function PaymentInstruction({ navigation, route }) {
 
     const [timeLeft, setTimeLeft] = useState(2 * 60 * 60 - 1); // 2 hours in seconds
     const [isPaid, setIsPaid] = useState(false);
+    const [snapUrl, setSnapUrl] = useState(null);
+    const [showWebView, setShowWebView] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Handle hardware back button
+    useEffect(() => {
+        const backAction = () => {
+            navigation.navigate('MainApp', { screen: 'home' });
+            return true; // Prevent default behavior
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [navigation]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -73,9 +94,71 @@ export default function PaymentInstruction({ navigation, route }) {
         alert('Kode pembayaran disalin!');
     };
 
-    const handleCheckPayment = () => {
-        setIsPaid(true);
-        alert('Pembayaran Berhasil Dikonfirmasi!');
+    const handlePayment = async () => {
+        if (!bookingId) {
+            // Fallback for mock data or missing ID
+            setIsPaid(true);
+            alert('Simulasi Pembayaran Berhasil (Mock)!');
+            return;
+        }
+        
+        setLoading(true);
+        const paymentResult = await payBooking(bookingId);
+        setLoading(false);
+
+        if (paymentResult && paymentResult.redirect_url) {
+            setSnapUrl(paymentResult.redirect_url);
+            setShowWebView(true);
+        } else {
+            alert("Gagal memulai pembayaran.");
+        }
+    };
+
+    const handleWebViewNavigationStateChange = (navState) => {
+        const { url } = navState;
+        
+        // Check for success indicators in the URL (Midtrans specific)
+        if (url.includes('status_code=200') || url.includes('transaction_status=settlement') || url.includes('transaction_status=capture')) {
+            setShowWebView(false);
+            setIsPaid(true);
+            alert("Pembayaran Berhasil!");
+            
+            let passengerList = [];
+            if (allPassengers && allPassengers.length > 0) {
+                passengerList = allPassengers.map((p, i) => ({
+                    name: p.name,
+                    id: p.id,
+                    type: p.type || 'Dewasa',
+                    seat: `${selectedClass.type} ${selectedCarriage || 1} / ${route.params.selectedSeats ? route.params.selectedSeats[i] : selectedSeat}`
+                }));
+            } else if (passengerDetails && Object.keys(passengerDetails).length > 0) {
+                 passengerList = Object.values(passengerDetails).map((p, i) => ({
+                    name: p.name || 'Penumpang',
+                    id: p.idNumber || '-',
+                    type: 'Dewasa',
+                    seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
+                }));
+            } else {
+                // Fallback if no data
+                passengerList = [{ name: 'Penumpang', id: '-', type: 'Dewasa', seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}` }];
+            }
+
+            navigation.navigate('TicketDetail', {
+                bookingCode: 'BOOK-' + (bookingId || Math.floor(Math.random() * 10000)),
+                train,
+                origin,
+                destination,
+                date: formattedDate,
+                allPassengers: passengerList,
+                passengers: passengerList,
+                selectedClass
+            });
+        }
+        
+        // Handle pending or error if needed
+        if (url.includes('status_code=201') || url.includes('transaction_status=pending')) {
+             // Pending
+        }
     };
 
     const handleViewTicket = () => {
@@ -123,6 +206,13 @@ export default function PaymentInstruction({ navigation, route }) {
                 style={styles.headerBg}
                 imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
             >
+                <View style={styles.absoluteHeader}>
+                    <TouchableOpacity onPress={() => navigation.navigate('MainApp', { screen: 'home' })} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <AppText style={styles.pageTitle}>Pembayaran</AppText>
+                </View>
+
                 <View style={{ height: 80 }} /> 
 
                 <View style={styles.timerContainer}>
@@ -160,22 +250,6 @@ export default function PaymentInstruction({ navigation, route }) {
                         <AppText style={styles.paymentAmount}>{formatCurrency(totalPrice)}</AppText>
                     </View>
 
-                    <AppText style={styles.codeLabel}>Kode Pembayaran</AppText>
-                    <View style={styles.codeRow}>
-                        <AppText style={styles.paymentCode}>{paymentCode}</AppText>
-                        <TouchableOpacity onPress={copyToClipboard}>
-                            <Ionicons name="copy-outline" size={24} color="#000" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.methodRow}>
-                        {selectedPaymentMethod && (
-                             <Ionicons name={selectedPaymentMethod.icon} size={24} color="#0056b3" style={{ marginRight: 10 }} />
-                        )}
-                        <AppText style={styles.methodName}>
-                            {selectedPaymentMethod ? `VIRTUAL ACCOUNT ${selectedPaymentMethod.name}` : 'VIRTUAL ACCOUNT'}
-                        </AppText>
-                    </View>
                 </View>
 
                 {/* Trip Summary Card */}
@@ -193,9 +267,14 @@ export default function PaymentInstruction({ navigation, route }) {
 
                 <TouchableOpacity 
                     style={[styles.primaryButton, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#F31260', marginBottom: 10 }]} 
-                    onPress={handleCheckPayment}
+                    onPress={handlePayment}
+                    disabled={loading}
                 >
-                    <AppText style={[styles.primaryButtonText, { color: '#F31260' }]}>Cek Pembayaran</AppText>
+                    {loading ? (
+                        <ActivityIndicator color="#F31260" />
+                    ) : (
+                        <AppText style={[styles.primaryButtonText, { color: '#F31260' }]}>Bayar</AppText>
+                    )}
                 </TouchableOpacity>
 
                 <TouchableOpacity 
@@ -208,13 +287,29 @@ export default function PaymentInstruction({ navigation, route }) {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* Absolute Header for Back Button */}
-            <View style={styles.absoluteHeader}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-                </TouchableOpacity>
-                <AppText style={styles.pageTitle}>Lakukan Pembayaran</AppText>
-            </View>
+            {/* Midtrans WebView Modal */}
+            <Modal
+                visible={showWebView}
+                onRequestClose={() => setShowWebView(false)}
+                animationType="slide"
+            >
+                <View style={{ flex: 1, paddingTop: 40 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10, alignItems: 'center' }}>
+                        <AppText style={{ fontSize: 18, fontWeight: 'bold' }}>Pembayaran</AppText>
+                        <TouchableOpacity onPress={() => setShowWebView(false)}>
+                            <Ionicons name="close" size={30} color="black" />
+                        </TouchableOpacity>
+                    </View>
+                    {snapUrl && (
+                        <WebView
+                            source={{ uri: snapUrl }}
+                            onNavigationStateChange={handleWebViewNavigationStateChange}
+                            startInLoadingState={true}
+                            renderLoading={() => <ActivityIndicator size="large" color="#F31260" style={{position: 'absolute', top: '50%', left: '50%'}} />}
+                        />
+                    )}
+                </View>
+            </Modal>
 
             <StatusBar style="light" />
         </View>

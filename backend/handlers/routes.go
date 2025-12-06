@@ -15,7 +15,7 @@ var (
 	repoBooking      BookingRepoInterface
 	repoKetersediaan KetersediaanRepoInterface
 	repoPayment      PaymentRepoInterface
-	repoGerbong      GerbongRepoInterface // <--- TAMBAH INI
+	repoGerbong      GerbongRepoInterface
 
 	authServiceGlobal models.AuthService
 	paymentSvc        *services.PaymentService
@@ -100,7 +100,7 @@ func InitHandlers(
 	// repoTiket = tiketRepo
 
 	authServiceGlobal = authSvc
-	paymentSvc = paySvc // <-- penting
+	paymentSvc = paySvc
 
 	dbConn = db
 }

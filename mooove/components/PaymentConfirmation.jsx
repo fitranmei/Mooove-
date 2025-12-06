@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import { createBooking } from '../services/api';
 
 export default function PaymentConfirmation({ navigation, route }) {
-    const { train, selectedClass, origin, destination, date, passengers, passengerDetails, selectedSeat, selectedCarriage, selectedPaymentMethod } = route.params || {
+    const { train, selectedClass, origin, destination, date, passengers, passengerDetails, selectedSeat, selectedCarriage, allPassengers, selectedSeats, selectedSeatIds } = route.params || {
         train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25', price: 180000 },
         selectedClass: { type: 'BISNIS', price: 180000 },
         origin: 'KERTAPATI',
@@ -15,8 +16,28 @@ export default function PaymentConfirmation({ navigation, route }) {
         passengerDetails: {},
         selectedSeat: '2D',
         selectedCarriage: 'Bisnis 1',
-        selectedPaymentMethod: null
+        allPassengers: [],
+        selectedSeats: [],
+        selectedSeatIds: []
     };
+
+    const [loading, setLoading] = useState(false);
+    const [bookingId, setBookingId] = useState(null);
+
+    // Disable hardware back button
+    useEffect(() => {
+        const backAction = () => {
+            // Prevent going back
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, []);
 
     const formattedDate = new Date(date).toLocaleDateString('id-ID', {
         weekday: 'long',
@@ -33,6 +54,49 @@ export default function PaymentConfirmation({ navigation, route }) {
         return `Rp${amount.toLocaleString('id-ID')}`;
     };
 
+    const handlePayment = async () => {
+        setLoading(true);
+        
+        const payload = {
+            schedule_id: selectedClass.scheduleId,
+            seat_ids: selectedSeatIds.filter(id => id !== null),
+            penumpangs: allPassengers.map(p => ({
+                nama: p.name,
+                no_identitas: p.id,
+            })),
+            total_harga: totalPrice
+        };
+
+        // Validate payload before sending
+        if (payload.seat_ids.length !== payload.penumpangs.length) {
+            setLoading(false);
+            alert("Data kursi dan penumpang tidak sesuai.");
+            return;
+        }
+
+        console.log("Sending Booking Payload:", JSON.stringify(payload, null, 2));
+
+        const booking = await createBooking(payload);
+
+        console.log("Booking Response:", booking);
+
+        if (!booking || !booking.booking_id) {
+            setLoading(false);
+            alert("Gagal membuat pesanan. Silakan coba lagi.");
+            return;
+        }
+
+        setBookingId(booking.booking_id);
+
+        // Navigate to PaymentInstruction immediately
+        navigation.navigate('PaymentInstruction', { 
+            ...route.params, 
+            bookingId: booking.booking_id, 
+            status: 'pending' 
+        });
+        setLoading(false);
+    };
+
     return (
         <View style={styles.container}>
             <ImageBackground
@@ -41,9 +105,8 @@ export default function PaymentConfirmation({ navigation, route }) {
                 imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
             >
                 <View style={styles.headerContent}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-                    </TouchableOpacity>
+                    {/* Back button removed/disabled visually */}
+                    <View style={{ width: 28 }} /> 
                     <AppText style={styles.pageTitle}>Pembelian Tiket</AppText>
                 </View>
             </ImageBackground>
@@ -85,37 +148,15 @@ export default function PaymentConfirmation({ navigation, route }) {
                 </View>
 
                 <TouchableOpacity 
-                    style={styles.paymentMethodButton}
-                    onPress={() => navigation.navigate('PaymentMethod', { ...route.params })}
+                    style={[styles.payButton, styles.payButtonActive]} 
+                    onPress={handlePayment}
+                    disabled={loading}
                 >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                         {selectedPaymentMethod ? (
-                             <>
-                                <Ionicons name={selectedPaymentMethod.icon} size={24} color="#0056b3" style={{ marginRight: 10 }} />
-                                <AppText style={styles.paymentMethodText}>{selectedPaymentMethod.name}</AppText>
-                             </>
-                         ) : (
-                             <AppText style={styles.paymentMethodText}>Pilih Metode Pembayaran</AppText>
-                         )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color="#000" />
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                    style={[
-                        styles.payButton, 
-                        selectedPaymentMethod ? styles.payButtonActive : styles.payButtonInactive
-                    ]} 
-                    onPress={() => {
-                        if (!selectedPaymentMethod) {
-                            alert('Mohon pilih metode pembayaran terlebih dahulu.');
-                            return;
-                        }
-                        navigation.navigate('PaymentInstruction', { ...route.params });
-                    }}
-                    disabled={!selectedPaymentMethod}
-                >
-                    <AppText style={styles.payButtonText}>Bayar</AppText>
+                    {loading ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <AppText style={styles.payButtonText}>Bayar Sekarang</AppText>
+                    )}
                 </TouchableOpacity>
 
                 <View style={{ height: 40 }} />

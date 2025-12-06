@@ -256,6 +256,18 @@ export default function SeatSelection({ navigation, route }) {
                 ]} 
                 disabled={selectedSeats.length !== totalPassengers}
                 onPress={() => {
+                    // Map selected seat numbers to IDs
+                    let selectedSeatIds = [];
+                    if (allData && allData.gerbongs) {
+                         const currentCarriageData = allData.gerbongs.find(g => g.id === selectedCarriage);
+                         if (currentCarriageData && currentCarriageData.kursi) {
+                             selectedSeatIds = selectedSeats.map(seatNum => {
+                                 const seat = currentCarriageData.kursi.find(s => s.nomor_kursi === seatNum);
+                                 return seat ? seat.id : null;
+                             });
+                         }
+                    }
+
                     navigation.navigate('PaymentConfirmation', {
                         train,
                         selectedClass,
@@ -266,6 +278,7 @@ export default function SeatSelection({ navigation, route }) {
                         passengerDetails,
                         allPassengers,
                         selectedSeats,
+                        selectedSeatIds, // Pass the IDs
                         selectedCarriage
                     });
                 }}>

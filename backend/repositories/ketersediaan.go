@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -39,9 +38,30 @@ func (r *ketersediaanRepo) FindAndLockBySchedule(tx *gorm.DB, scheduleID uint, s
 		Find(&inv).Error; err != nil {
 		return nil, err
 	}
+
+	// Jika jumlah tidak sama, berarti ada yang belum ada record-nya (lazy init)
 	if len(inv) != len(seatIDs) {
-		return nil, errors.New("beberapa kursi tidak ditemukan di inventory")
+		existingMap := make(map[uint]bool)
+		for _, item := range inv {
+			existingMap[item.SeatID] = true
+		}
+
+		for _, sid := range seatIDs {
+			if !existingMap[sid] {
+				newInv := models.KetersediaanKursi{
+					TrainScheduleID: scheduleID,
+					SeatID:          sid,
+					Status:          "available",
+					UpdatedAt:       time.Now(),
+				}
+				if err := tx.Create(&newInv).Error; err != nil {
+					return nil, err
+				}
+				inv = append(inv, newInv)
+			}
+		}
 	}
+
 	return inv, nil
 }
 
