@@ -48,16 +48,16 @@ export default function Home({ navigation }) {
                     </TouchableOpacity>
 
                 <View style={styles.rowContainer}>
-                    <View style={styles.smallOption}>
+                    <TouchableOpacity style={styles.smallOption} onPress={() => navigation.navigate('TrainSchedule')}>
                         <Image source={require('../assets/images/home-icon-2.png')} style={styles.smallIcon} />
                         <AppText style={styles.titleSmall}>Jadwal Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi jadwal perjalanan kereta</AppText>
-                    </View>
-                    <View style={styles.smallOption}>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.smallOption} onPress={() => navigation.navigate('TrainFares')}>
                         <Image source={require('../assets/images/home-icon-4.png')} style={styles.smallIcon} />
                         <AppText style={styles.titleSmall}>Tarif Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi tarif perjalanan kereta</AppText>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.rowContainer}>

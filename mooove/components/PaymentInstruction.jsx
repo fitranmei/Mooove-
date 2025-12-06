@@ -64,7 +64,8 @@ export default function PaymentInstruction({ navigation, route }) {
 
     const time = formatTime(timeLeft);
 
-    const formattedDate = new Date(date).toLocaleDateString('id-ID', {
+    const dateObj = date ? new Date(date) : new Date();
+    const formattedDate = dateObj.toLocaleDateString('id-ID', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -117,12 +118,10 @@ export default function PaymentInstruction({ navigation, route }) {
     const handleWebViewNavigationStateChange = async (navState) => {
         const { url } = navState;
         
-        // Check for success indicators in the URL (Midtrans specific)
         if (url.includes('status_code=200') || url.includes('transaction_status=settlement') || url.includes('transaction_status=capture')) {
             setShowWebView(false);
             setIsPaid(true);
             
-            // Update status in backend
             if (bookingId) {
                 await updateBookingStatus(bookingId);
             }
@@ -145,19 +144,18 @@ export default function PaymentInstruction({ navigation, route }) {
                     seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
                 }));
             } else {
-                // Fallback if no data
                 passengerList = [{ name: 'Penumpang', id: '-', type: 'Dewasa', seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}` }];
             }
 
             navigation.navigate('TicketDetail', {
-                bookingCode: 'BOOK-' + (bookingId || Math.floor(Math.random() * 10000)),
-                train,
-                origin,
-                destination,
+                bookingCode: bookingId ? `BOOK-${bookingId}` : 'KJB75AU',
+                train: train || { name: 'Kereta', departureTime: '00:00', arrivalTime: '00:00' },
+                origin: origin || 'Asal',
+                destination: destination || 'Tujuan',
                 date: formattedDate,
                 allPassengers: passengerList,
                 passengers: passengerList,
-                selectedClass
+                selectedClass: selectedClass || { type: 'Ekonomi' }
             });
         }
         
@@ -193,14 +191,14 @@ export default function PaymentInstruction({ navigation, route }) {
         }
 
         navigation.navigate('TicketDetail', {
-            bookingCode: 'KJB75AU',
-            train,
-            origin,
-            destination,
+            bookingCode: bookingId ? `BOOK-${bookingId}` : 'KJB75AU',
+            train: train || { name: 'Kereta', departureTime: '00:00', arrivalTime: '00:00' },
+            origin: origin || 'Asal',
+            destination: destination || 'Tujuan',
             date: formattedDate,
             allPassengers: passengerList,
             passengers: passengerList,
-            selectedClass
+            selectedClass: selectedClass || { type: 'Ekonomi' }
         });
     };
 
@@ -259,7 +257,7 @@ export default function PaymentInstruction({ navigation, route }) {
 
                 {/* Trip Summary Card */}
                 <View style={styles.card}>
-                    <AppText style={styles.routeText}>{origin} (KPT) {'>'} {destination} (LLG)</AppText>
+                    <AppText style={styles.routeText}>{origin} {'>'} {destination}</AppText>
                     <View style={styles.trainInfoRow}>
                         <AppText style={styles.trainName}>{train.name}</AppText>
                         <View style={styles.dot} />

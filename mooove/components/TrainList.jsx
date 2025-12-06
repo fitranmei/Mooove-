@@ -3,7 +3,7 @@ import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatLi
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
-import { getSchedules } from '../services/api';
+import { getAllSchedules } from '../services/api';
 
 export default function TrainList({ navigation, route }) {
     const { origin, destination, date, passengers, originId, destinationId } = route.params || {
@@ -27,23 +27,51 @@ export default function TrainList({ navigation, route }) {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            const o = originId || origin;
-            const d = destinationId || destination;
             
-            const data = await getSchedules(o, d, date);
+            const allData = await getAllSchedules();
             
-            if (data && Array.isArray(data)) {
+            if (allData && Array.isArray(allData)) {
+                const filteredData = allData.filter(item => {
+                    const itemOriginId = item.asal_id || (item.asal ? item.asal.id : null);
+                    const reqOriginId = originId;
+                    const originMatch = reqOriginId ? itemOriginId == reqOriginId : true;
+
+                    const itemDestId = item.tujuan_id || (item.tujuan ? item.tujuan.id : null);
+                    const reqDestId = destinationId;
+                    const destMatch = reqDestId ? itemDestId == reqDestId : true;
+
+                    const dateSource = item.waktu_berangkat || item.waktuBerangkat || item.tanggal;
+                    if (!dateSource) return false;
+
+                    let itemDateStr = '';
+                    if (dateSource.includes('T')) {
+                        itemDateStr = dateSource.split('T')[0];
+                    } else {
+                        itemDateStr = dateSource.split(' ')[0];
+                    }
+
+                    let targetDateStr = '';
+                    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                        targetDateStr = date;
+                    } else {
+                        const d = new Date(date);
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        targetDateStr = `${year}-${month}-${day}`;
+                    }
+
+                    return originMatch && destMatch && (itemDateStr === targetDateStr);
+                });
+
                 const grouped = {};
 
-                data.forEach(item => {
-                    // Skip if train data is missing
+                filteredData.forEach(item => {
                     if (!item.kereta) return;
 
-                    // Group by Train ID and Departure Time
                     const key = `${item.kereta.id}_${item.waktu_berangkat}`;
                     
                     if (!grouped[key]) {
-                        // Calculate duration
                         const start = new Date(item.waktu_berangkat);
                         const end = new Date(item.waktu_tiba);
                         const diffMs = end - start;
@@ -51,14 +79,13 @@ export default function TrainList({ navigation, route }) {
                         const diffMins = Math.round((diffMs % 3600000) / 60000);
                         const duration = `${diffHrs}j ${diffMins}m`;
 
-                        // Format time HH:mm
                         const formatTime = (dateStr) => {
                             const d = new Date(dateStr);
                             return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
                         };
 
                         grouped[key] = {
-                            id: key, // Unique ID for the UI card
+                            id: key, 
                             name: item.kereta.nama,
                             trainId: item.kereta.id,
                             duration: duration,

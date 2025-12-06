@@ -36,18 +36,24 @@ export const getStations = async () => {
 
 export const getSchedules = async (origin, destination, date) => {
     try {
-        const dateObj = new Date(date);
-        const dateStr = dateObj.toISOString().split('T')[0];
+        let dateStr;
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            dateStr = date;
+        } else {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateStr = `${year}-${month}-${day}`;
+        }
         
-        // Use /jadwal/cari for filtering
         const response = await api.get('/jadwal/cari', {
             params: {
-                asal: origin,        // Backend expects 'asal'
-                tujuan: destination, // Backend expects 'tujuan'
-                tanggal: dateStr     // Backend expects 'tanggal'
+                asal: origin,
+                tujuan: destination,
+                tanggal: dateStr
             }
         });
-        // Handle if response is directly the array or wrapped in data
         return Array.isArray(response.data) ? response.data : response.data.data;
     } catch (error) {
         console.error("Error fetching schedules:", error);
@@ -55,10 +61,30 @@ export const getSchedules = async (origin, destination, date) => {
     }
 };
 
+export const getAllSchedules = async () => {
+    try {
+        const response = await api.get('/jadwal');
+        return Array.isArray(response.data) ? response.data : response.data.data;
+    } catch (error) {
+        console.error("Error fetching all schedules:", error);
+        return [];
+    }
+};
+
+export const getTrains = async () => {
+    try {
+        const response = await api.get('/kereta');
+        return Array.isArray(response.data) ? response.data : response.data.data;
+    } catch (error) {
+        console.error("Error fetching trains:", error);
+        return [];
+    }
+};
+
 export const getScheduleSeats = async (scheduleId) => {
     try {
         const response = await api.get(`/jadwal/${scheduleId}/kursi`);
-        return response.data; // Returns the full object structure directly
+        return response.data; 
     } catch (error) {
         console.error("Error fetching schedule seats:", error);
         return null;

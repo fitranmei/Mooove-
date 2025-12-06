@@ -20,7 +20,6 @@ export default function MyTicket({ navigation }) {
     setLoading(true);
     try {
       const bookings = await getUserBookings();
-      // Filter paid and pending bookings
       const activeBookings = bookings.filter(b => b.Status === 'paid' || b.Status === 'pending');
       
       const formatted = activeBookings.map(booking => {
@@ -29,13 +28,11 @@ export default function MyTicket({ navigation }) {
         const asal = schedule.asal || {};
         const tujuan = schedule.tujuan || {};
         
-        // Format date
         const dateObj = new Date(schedule.tanggal || booking.CreatedAt);
         const dateStr = dateObj.toLocaleDateString('id-ID', {
           weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
         });
 
-        // Format time from ISO string
         const formatTime = (isoString) => {
             if (!isoString) return '00:00';
             const d = new Date(isoString);
@@ -72,79 +69,113 @@ export default function MyTicket({ navigation }) {
           status: booking.Status === 'paid' ? 'Lunas' : 'Menunggu Pembayaran',
           rawStatus: booking.Status,
           totalPrice: booking.TotalPrice,
-          // Pass raw data for navigation
-          rawData: {
-            bookingCode: 'BOOK-' + booking.ID,
-            bookingId: booking.ID,
-            train: { 
-                name: kereta.nama, 
-                departureTime: formatTime(schedule.waktu_berangkat), 
-                arrivalTime: formatTime(schedule.waktu_tiba),
-                price: unitPrice 
-            },
-            selectedClass: { type: trainClassName, price: unitPrice },
-            origin: `${asal.nama || 'Origin'} (${asal.kode || 'ORG'})`,
-            destination: `${tujuan.nama || 'Destination'} (${tujuan.kode || 'DST'})`,
-            date: dateStr,
-            passengers: passengerCount,
-            allPassengers: (booking.Penumpangs || []).map((p, index) => {
-                let seatStr = '-';
-                
-                // 1. Try direct property on passenger
-                if (p.kursi && typeof p.kursi === 'string') seatStr = p.kursi;
-                else if (p.nomor_kursi) seatStr = p.nomor_kursi;
-                else if (p.seat) seatStr = p.seat;
-                
-                // 2. Try nested Kursi object on passenger (Backend Update Support)
-                const k = p.Kursi || p.kursi;
-                if (seatStr === '-' && k) {
-                     const num = k.nomor_kursi || k.NomorKursi;
-                     
-                     if (num) {
-                         // Try to get carriage info from nested Gerbong
-                         const g = k.Gerbong || k.gerbong;
-                         if (g) {
-                             const className = (g.Kelas || g.kelas || trainClassName).toUpperCase();
-                             const carriageNum = g.NomorGerbong || g.nomor_gerbong || '';
-                             seatStr = `${className} ${carriageNum} / ${num}`;
-                         } else {
-                             seatStr = num;
-                         }
-                     }
-                }
-                
-                // 3. Try matching index in booking.Kursis / booking.Seats
-                if (seatStr === '-') {
-                    const seats = booking.Kursis || booking.Seats || [];
-                    if (seats[index]) {
-                        const s = seats[index];
-                        const num = s.nomor_kursi || s.NomorKursi || s.seat_number || s.SeatNumber;
-                        if (num) {
-                             // Try to get carriage info
-                             const carriage = s.Gerbong ? (s.Gerbong.nama || s.Gerbong.Nama) : 
-                                              (s.gerbong ? (s.gerbong.nama || s.gerbong.nomor_gerbong) : null);
-                             
-                             if (carriage) {
-                                 seatStr = `${trainClassName} ${carriage} / ${num}`;
+            rawData: {
+                bookingCode: 'BOOK-' + booking.ID,
+                bookingId: booking.ID,
+                train: { 
+                    name: kereta.nama, 
+                    departureTime: formatTime(schedule.waktu_berangkat), 
+                    arrivalTime: formatTime(schedule.waktu_tiba),
+                    price: unitPrice 
+                },
+                selectedClass: { type: trainClassName, price: unitPrice },
+                origin: asal.nama || 'Origin',
+                destination: tujuan.nama || 'Destination',
+                date: schedule.tanggal || booking.CreatedAt, 
+                passengers: passengerCount,
+                allPassengers: (booking.Penumpangs || []).map((p, index) => {
+                    let seatStr = '-';
+                    
+                    if (p.kursi && typeof p.kursi === 'string') seatStr = p.kursi;
+                    else if (p.nomor_kursi) seatStr = p.nomor_kursi;
+                    else if (p.seat) seatStr = p.seat;
+                    
+                    const k = p.Kursi || p.kursi;
+                    if (seatStr === '-' && k) {
+                         const num = k.nomor_kursi || k.NomorKursi;
+                         
+                         if (num) {
+                             const g = k.Gerbong || k.gerbong;
+                             if (g) {
+                                 const className = (g.Kelas || g.kelas || trainClassName).toUpperCase();
+                                 const carriageNum = g.NomorGerbong || g.nomor_gerbong || '';
+                                 seatStr = `${className} ${carriageNum} / ${num}`;
                              } else {
                                  seatStr = num;
                              }
+                         }
+                    }
+                    
+                    if (seatStr === '-') {
+                        const seats = booking.Kursis || booking.Seats || [];
+                        if (seats[index]) {
+                            const s = seats[index];
+                            const num = s.nomor_kursi || s.NomorKursi || s.seat_number || s.SeatNumber;
+                            if (num) {
+                                 const carriage = s.Gerbong ? (s.Gerbong.nama || s.Gerbong.Nama) : 
+                                                  (s.gerbong ? (s.gerbong.nama || s.gerbong.nomor_gerbong) : null);
+                                 
+                                 if (carriage) {
+                                     seatStr = `${trainClassName} ${carriage} / ${num}`;
+                                 } else {
+                                     seatStr = num;
+                                 }
+                            }
                         }
                     }
-                }
+    
+                    return {
+                        name: p.nama,
+                        id: p.no_identitas,
+                        type: 'Dewasa',
+                        seat: seatStr
+                    };
+                }),
+                selectedSeat: (() => {
+                    const seats = booking.Kursis || booking.Seats || [];
+                    if (seats.length > 0) {
+                        const s = seats[0];
+                        if (s.nomor_kursi) return s.nomor_kursi;
+                        if (s.NomorKursi) return s.NomorKursi;
+                        if (s.seat_number) return s.seat_number;
+                    }
+                    
+                    const passengers = booking.Penumpangs || [];
+                    if (passengers.length > 0) {
+                        const p = passengers[0];
+                        const k = p.Kursi || p.kursi;
+                        if (k) {
+                            if (k.nomor_kursi) return k.nomor_kursi;
+                            if (k.NomorKursi) return k.NomorKursi;
+                        }
+                        if (p.seat) return p.seat;
+                        if (p.nomor_kursi) return p.nomor_kursi;
+                    }
+                    
+                    return '-';
+                })(),
+                selectedCarriage: (() => {
+                    const seats = booking.Kursis || booking.Seats || [];
+                    if (seats.length > 0) {
+                        const s = seats[0];
+                        const g = s.Gerbong || s.gerbong;
+                        if (g) return g.nama || g.nomor_gerbong || g.NomorGerbong || '1';
+                    }
 
-                return {
-                    name: p.nama,
-                    id: p.no_identitas,
-                    type: 'Dewasa',
-                    seat: seatStr
-                };
-            }),
-            // Mock/Default for missing data
-            selectedSeat: 'Any', 
-            selectedCarriage: 'Any',
-            selectedPaymentMethod: { name: 'Online Payment', icon: 'card-outline' }
-          }
+                    const passengers = booking.Penumpangs || [];
+                    if (passengers.length > 0) {
+                        const p = passengers[0];
+                        const k = p.Kursi || p.kursi;
+                        if (k) {
+                            const g = k.Gerbong || k.gerbong;
+                            if (g) return g.nama || g.nomor_gerbong || g.NomorGerbong || '1';
+                        }
+                    }
+                    
+                    return '1';
+                })(),
+                selectedPaymentMethod: { name: 'Online Payment', icon: 'card-outline' }
+            }
         };
       });
       
