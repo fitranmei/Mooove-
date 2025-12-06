@@ -1,22 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal, FlatList, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AppText from './AppText';
-
-const stations = [
-    { id: 'KPT', name: 'KERTAPATI', city: 'Palembang' },
-    { id: 'LLG', name: 'LUBUK LINGGAU', city: 'Lubuklinggau' },
-    { id: 'LMP', name: 'LAHAT', city: 'Lahat' },
-    { id: 'PBM', name: 'PRABUMULIH', city: 'Prabumulih' },
-    { id: 'ME', name: 'MUARA ENIM', city: 'Muara Enim' },
-    { id: 'TMB', name: 'TEBING TINGGI', city: 'Empat Lawang' },
-];
+import { getStations } from '../services/api';
 
 export default function BookingForm({ navigation }) {
-    const [origin, setOrigin] = useState('KERTAPATI');
-    const [destination, setDestination] = useState('LUBUK LINGGAU');
+    const [stations, setStations] = useState([]);
+    const [origin, setOrigin] = useState(null);
+    const [destination, setDestination] = useState(null);
     const [date, setDate] = useState(new Date());
     const [passengers, setPassengers] = useState('1');
 
@@ -24,6 +17,16 @@ export default function BookingForm({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [activeField, setActiveField] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        const fetchStations = async () => {
+            const data = await getStations();
+            if (data && data.length > 0) {
+                setStations(data);
+            }
+        };
+        fetchStations();
+    }, []);
 
     const handleSwap = () => {
         const temp = origin;
@@ -48,18 +51,19 @@ export default function BookingForm({ navigation }) {
         setModalVisible(true);
     };
 
-    const selectStation = (stationName) => {
+    const selectStation = (station) => {
         if (activeField === 'origin') {
-            setOrigin(stationName);
+            setOrigin(station);
         } else {
-            setDestination(stationName);
+            setDestination(station);
         }
         setModalVisible(false);
     };
 
     const filteredStations = stations.filter(station => 
-        station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        station.city.toLowerCase().includes(searchQuery.toLowerCase())
+        station.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        station.kota.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        station.kode.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -86,7 +90,9 @@ export default function BookingForm({ navigation }) {
                         </View>
                         <View style={styles.textInputContainer}>
                             <AppText style={styles.label}>Dari</AppText>
-                            <AppText style={styles.inputText}>{origin}</AppText>
+                            <AppText style={origin ? styles.inputText : styles.placeholderText}>
+                                {origin ? origin.nama : 'Stasiun Keberangkatan'}
+                            </AppText>
                         </View>
                     </TouchableOpacity>
                     
@@ -99,7 +105,9 @@ export default function BookingForm({ navigation }) {
                         </View>
                         <View style={styles.textInputContainer}>
                             <AppText style={styles.label}>Ke</AppText>
-                            <AppText style={styles.inputText}>{destination}</AppText>
+                            <AppText style={destination ? styles.inputText : styles.placeholderText}>
+                                {destination ? destination.nama : 'Stasiun Tujuan'}
+                            </AppText>
                         </View>
                     </TouchableOpacity>
 
@@ -154,12 +162,20 @@ export default function BookingForm({ navigation }) {
                     <View style={styles.spacerLarge} />
 
                     {/* Search Button */}
-                    <TouchableOpacity style={styles.searchButton} onPress={() => navigation.navigate('TrainList', {
-                        origin,
-                        destination,
-                        date: date.toISOString(),
-                        passengers
-                    })}>
+                    <TouchableOpacity 
+                        style={[styles.searchButton, (!origin || !destination) && styles.searchButtonDisabled]} 
+                        disabled={!origin || !destination}
+                        onPress={() => {
+                            navigation.navigate('TrainList', {
+                                origin: origin.nama,
+                                destination: destination.nama,
+                                originId: origin.id,
+                                destinationId: destination.id,
+                                date: date.toISOString(),
+                                passengers
+                            });
+                        }}
+                    >
                         <AppText style={styles.searchButtonText}>Cari Tiket Kereta</AppText>
                     </TouchableOpacity>
                 </View>
@@ -194,12 +210,12 @@ export default function BookingForm({ navigation }) {
 
                         <FlatList
                             data={filteredStations}
-                            keyExtractor={item => item.id}
+                            keyExtractor={item => item.id.toString()}
                             renderItem={({ item }) => (
-                                <TouchableOpacity style={styles.stationItem} onPress={() => selectStation(item.name)}>
+                                <TouchableOpacity style={styles.stationItem} onPress={() => selectStation(item)}>
                                     <View>
-                                        <AppText style={styles.stationName}>{item.name} ({item.id})</AppText>
-                                        <AppText style={styles.stationCity}>{item.city}</AppText>
+                                        <AppText style={styles.stationName}>{item.nama} ({item.kode})</AppText>
+                                        <AppText style={styles.stationCity}>{item.kota}</AppText>
                                     </View>
                                 </TouchableOpacity>
                             )}
@@ -290,6 +306,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#000',
     },
+    placeholderText: {
+        fontFamily: 'PlusJakartaSans_500Medium',
+        fontSize: 14,
+        color: '#888',
+    },
     divider: {
         height: 1,
         backgroundColor: '#E4E4E7',
@@ -326,6 +347,9 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
+    },
+    searchButtonDisabled: {
+        backgroundColor: '#E0E0E0',
     },
     searchButtonText: {
         fontFamily: 'PlusJakartaSans_700Bold',

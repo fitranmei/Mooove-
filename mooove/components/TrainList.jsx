@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, FlatList, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import { getSchedules } from '../services/api';
 
 export default function TrainList({ navigation, route }) {
-    const { origin, destination, date, passengers } = route.params || {
+    const { origin, destination, date, passengers, originId, destinationId } = route.params || {
         origin: 'KERTAPATI',
         destination: 'LUBUK LINGGAU',
         date: new Date().toISOString(),
@@ -19,36 +20,39 @@ export default function TrainList({ navigation, route }) {
         year: 'numeric'
     });
 
-    // data mockup
-    const trains = [
-        {
-            id: 'S1',
-            name: 'SINDANG MARGA S1',
-            duration: '6j 10m',
-            departureTime: '20:15',
-            departureStation: `${origin} (KPT)`,
-            arrivalTime: '02:25',
-            arrivalStation: `${destination} (LLG)`,
-            classes: [
-                { type: 'BISNIS', price: 180000 },
-                { type: 'EKSEKUTIF', price: 240000 },
-            ]
-        },
-        {
-            id: 'S9',
-            name: 'BUKIT SERELO S9',
-            duration: '6j 25m',
-            departureTime: '09:00',
-            departureStation: `${origin} (KPT)`,
-            arrivalTime: '15:25',
-            arrivalStation: `${destination} (LLG)`,
-            classes: [
-                { type: 'EKONOMI', price: 32000 },
-            ]
-        }
-    ];
+    const [trains, setTrains] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [expandedCard, setExpandedCard] = useState(null);
 
-    const [expandedCard, setExpandedCard] = useState(trains[0].id);
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            // Gunakan ID jika ada, jika tidak gunakan nama (fallback)
+            const o = originId || origin;
+            const d = destinationId || destination;
+            
+            const data = await getSchedules(o, d, date);
+            
+            if (data && Array.isArray(data)) {
+                // Mapping data backend ke format UI
+                const mapped = data.map(item => ({
+                    id: item.id,
+                    name: item.train?.name || item.train_name || 'Kereta',
+                    duration: item.duration || '-', 
+                    departureTime: item.departure_time?.substring(0, 5) || item.departureTime,
+                    departureStation: `${origin}`,
+                    arrivalTime: item.arrival_time?.substring(0, 5) || item.arrivalTime,
+                    arrivalStation: `${destination}`,
+                    classes: item.classes || [] // Pastikan backend mengirim array classes
+                }));
+                setTrains(mapped);
+            } else {
+                setTrains([]);
+            }
+            setLoading(false);
+        };
+        fetchData();
+    }, [origin, destination, date]);
 
     const toggleExpand = (id) => {
         setExpandedCard(expandedCard === id ? null : id);
@@ -146,13 +150,22 @@ export default function TrainList({ navigation, route }) {
             <View style={styles.contentContainer}>
                 <AppText style={styles.pageTitle}>Pilih Kereta Berangkat</AppText>
                 
-                <FlatList
-                    data={trains}
-                    keyExtractor={item => item.id}
-                    renderItem={renderTrainCard}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                />
+                {loading ? (
+                    <ActivityIndicator size="large" color="#F31260" style={{marginTop: 50}} />
+                ) : (
+                    <FlatList
+                        data={trains}
+                        keyExtractor={item => item.id}
+                        renderItem={renderTrainCard}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        ListEmptyComponent={
+                            <View style={{alignItems: 'center', marginTop: 50}}>
+                                <AppText style={{color: '#888'}}>Tidak ada jadwal kereta tersedia.</AppText>
+                            </View>
+                        }
+                    />
+                )}
             </View>
 
             <StatusBar style="light" />
