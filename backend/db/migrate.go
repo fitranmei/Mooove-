@@ -18,6 +18,7 @@ func RunMigrations(db *gorm.DB) {
 		&models.KetersediaanKursi{},
 		&models.Booking{},
 		&models.Penumpang{},
+		&models.Payment{},
 	); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}

@@ -187,8 +187,8 @@ func (h *BookingHandler) ListBookingsForUser(c *fiber.Ctx) error {
 	return c.JSON(bookings)
 }
 
-// CreatePaymentForBooking: placeholder (sesuaikan nanti dengan PaymentService)
-func (h *BookingHandler) CreatePaymentForBooking(c *fiber.Ctx) error {
+// CreatePaymentForBookingPlaceholder: placeholder (sesuaikan nanti dengan PaymentService)
+func (h *BookingHandler) CreatePaymentForBookingPlaceholder(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -199,17 +199,24 @@ func (h *BookingHandler) CreatePaymentForBooking(c *fiber.Ctx) error {
 }
 
 // PaymentWebhook: placeholder webhook handler
+// PaymentWebhook menerima notifikasi dari Midtrans
 func (h *BookingHandler) PaymentWebhook(c *fiber.Ctx) error {
-	var payload struct {
-		ProviderPaymentID string `json:"provider_payment_id"`
-		Status            string `json:"status"`
-		BookingID         uint   `json:"booking_id"`
-	}
+	var payload map[string]interface{}
 	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "payload tidak valid", "detail": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":  "payload tidak valid",
+			"detail": err.Error(),
+		})
 	}
-	// TODO: verify signature, update payment, finalize booking
-	_ = payload
+
+	// Proses webhook (verifikasi signature + update DB + finalisasi booking)
+	err := paymentSvc.HandleWebhook(c.Context(), payload)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
 	return c.SendStatus(fiber.StatusOK)
 }
 
@@ -273,5 +280,52 @@ func (h *BookingHandler) DeleteBooking(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"booking_id": bookingID,
 		"status":     "cancelled",
+	})
+}
+
+// CreatePaymentForBooking: inisiasi Midtrans Snap transaction
+// CreatePaymentForBooking membuat transaksi Midtrans Snap.
+func (h *BookingHandler) CreatePaymentForBooking(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "id booking tidak valid",
+		})
+	}
+	bookingID := uint(id)
+
+	// Ambil booking dari DB
+	booking, err := repoBooking.GetByID(bookingID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "booking tidak ditemukan",
+		})
+	}
+
+	// Validasi kepemilikan booking
+	if v := c.Locals("user_id"); v != nil {
+		uid, ok := v.(uint)
+		if ok && booking.UserID != nil && *booking.UserID != uid {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "anda tidak berhak membayar booking ini",
+			})
+		}
+	}
+
+	// Panggil Midtrans Snap
+	result, err := paymentSvc.CreatePayment(c.Context(), bookingID, booking.TotalPrice)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Response: token & redirect_url ke mobile app
+	return c.JSON(fiber.Map{
+		"booking_id":   bookingID,
+		"snap_token":   result["token"],
+		"redirect_url": result["redirect_url"],
+		"order_id":     result["order_id"],
 	})
 }

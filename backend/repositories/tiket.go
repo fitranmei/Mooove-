@@ -1,85 +1,58 @@
 package repositories
 
 import (
-	"context"
-	"errors"
+	"gorm.io/gorm"
 
 	"github.com/fitranmei/Mooove-/backend/models"
-	"gorm.io/gorm"
 )
 
-type TiketRepository interface {
-	CreateTiket(ctx context.Context, tiket *models.Tiket) error
-	GetTiketByID(ctx context.Context, id uint) (*models.Tiket, error)
-	GetTiketByNomorTiket(ctx context.Context, nomor string) (*models.Tiket, error)
-	GetTiketByPemesananID(ctx context.Context, pemesananID uint) ([]models.Tiket, error)
-	GetTiketByPenumpangID(ctx context.Context, penumpangID uint) ([]models.Tiket, error)
-	GetTiketByJadwalID(ctx context.Context, jadwalID uint) ([]models.Tiket, error)
-	GetAllTiket(ctx context.Context) ([]models.Tiket, error)
-	UpdateTiket(ctx context.Context, tiket *models.Tiket) error
-	DeleteTiket(ctx context.Context, id uint) error
-}
-
-type tiketRepository struct {
+type TiketRepo struct {
 	db *gorm.DB
 }
 
-func NewTiketRepository(db *gorm.DB) TiketRepository {
-	return &tiketRepository{db: db}
+type TiketRepoInterface interface {
+	GetByID(id uint) (*models.Tiket, error)
+	GetByBookingID(bookingID uint) ([]models.Tiket, error)
+	GetByUserID(userID uint) ([]models.Tiket, error)
+	Create(tx *gorm.DB, t *models.Tiket) error
 }
 
-func (r *tiketRepository) CreateTiket(ctx context.Context, tiket *models.Tiket) error {
-	return r.db.WithContext(ctx).Create(tiket).Error
+func NewTiketRepo(db *gorm.DB) *TiketRepo {
+	return &TiketRepo{db: db}
 }
 
-func (r *tiketRepository) GetTiketByID(ctx context.Context, id uint) (*models.Tiket, error) {
-	var tiket models.Tiket
-	result := r.db.WithContext(ctx).First(&tiket, id)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, nil
+func (r *TiketRepo) Create(tx *gorm.DB, t *models.Tiket) error {
+	if tx != nil {
+		return tx.Create(t).Error
 	}
-	return &tiket, result.Error
+	return r.db.Create(t).Error
 }
 
-func (r *tiketRepository) GetTiketByNomorTiket(ctx context.Context, nomor string) (*models.Tiket, error) {
-	var tiket models.Tiket
-	result := r.db.WithContext(ctx).Where("nomor_tiket = ?", nomor).First(&tiket)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, nil
+func (r *TiketRepo) GetByID(id uint) (*models.Tiket, error) {
+	var t models.Tiket
+	err := r.db.First(&t, id).Error
+	if err != nil {
+		return nil, err
 	}
-	return &tiket, result.Error
+	return &t, nil
 }
 
-func (r *tiketRepository) GetTiketByPemesananID(ctx context.Context, pemesananID uint) ([]models.Tiket, error) {
-	var tikets []models.Tiket
-	err := r.db.WithContext(ctx).Where("pemesanan_id = ?", pemesananID).Find(&tikets).Error
-	return tikets, err
+func (r *TiketRepo) GetByBookingID(bookingID uint) ([]models.Tiket, error) {
+	var t []models.Tiket
+	err := r.db.Where("booking_id = ?", bookingID).Find(&t).Error
+	return t, err
 }
 
-func (r *tiketRepository) GetTiketByPenumpangID(ctx context.Context, penumpangID uint) ([]models.Tiket, error) {
-	var tikets []models.Tiket
-	err := r.db.WithContext(ctx).Where("penumpang_id = ?", penumpangID).Find(&tikets).Error
-	return tikets, err
-}
+func (r *TiketRepo) GetByUserID(userID uint) ([]models.Tiket, error) {
+	var t []models.Tiket
+	/*
+	   JOIN:
+	   tiket -> booking -> user_id
+	*/
+	err := r.db.
+		Joins("JOIN bookings ON bookings.id = tiket.booking_id").
+		Where("bookings.user_id = ?", userID).
+		Find(&t).Error
 
-func (r *tiketRepository) GetTiketByJadwalID(ctx context.Context, jadwalID uint) ([]models.Tiket, error) {
-	var tikets []models.Tiket
-	err := r.db.WithContext(ctx).Where("jadwal_id = ?", jadwalID).Find(&tikets).Error
-	return tikets, err
-}
-
-func (r *tiketRepository) GetAllTiket(ctx context.Context) ([]models.Tiket, error) {
-	var tikets []models.Tiket
-	err := r.db.WithContext(ctx).Find(&tikets).Error
-	return tikets, err
-}
-
-func (r *tiketRepository) UpdateTiket(ctx context.Context, tiket *models.Tiket) error {
-	return r.db.WithContext(ctx).Save(tiket).Error
-}
-
-func (r *tiketRepository) DeleteTiket(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&models.Tiket{}, id).Error
+	return t, err
 }

@@ -3,170 +3,143 @@ package handlers
 import (
 	"strconv"
 
-	"github.com/fitranmei/Mooove-/backend/models"
-	"github.com/fitranmei/Mooove-/backend/repositories"
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
+
+	"github.com/fitranmei/Mooove-/backend/models"
 )
 
+type TiketRepoInterface interface {
+	GetByID(id uint) (*models.Tiket, error)
+	GetByBookingID(bookingID uint) ([]models.Tiket, error)
+	GetByUserID(userID uint) ([]models.Tiket, error)
+}
+
 type TiketHandler struct {
-	repo repositories.TiketRepository
+	db   *gorm.DB
+	repo TiketRepoInterface
 }
 
-func NewTiketHandler(repo repositories.TiketRepository) *TiketHandler {
-	return &TiketHandler{repo: repo}
+func NewTiketHandler(db *gorm.DB, repo TiketRepoInterface) *TiketHandler {
+	return &TiketHandler{
+		db:   db,
+		repo: repo,
+	}
 }
 
-func (h *TiketHandler) CreateTiket(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	var req models.Tiket
-
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "body tidak valid: " + err.Error()})
-	}
-
-	if req.PemesananID == 0 || req.PenumpangID == 0 || req.JadwalID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "pemesanan_id, penumpang_id, dan jadwal_id wajib diisi"})
-	}
-
-	if err := h.repo.CreateTiket(ctx, &req); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(req)
-}
-
-func (h *TiketHandler) GetAllTiket(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	tikets, err := h.repo.GetAllTiket(ctx)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(tikets)
-}
-
+// ====================================================================
+//
+//	GET /tiket/:id  → Ambil detail satu tiket
+//
+// ====================================================================
 func (h *TiketHandler) GetTiketByID(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	id, err := strconv.ParseUint(idParam, 10, 64)
+	idStr := c.Params("id")
+	idUint, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id tidak valid"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "id tiket tidak valid",
+		})
 	}
+	id := uint(idUint)
 
-	tiket, err := h.repo.GetTiketByID(ctx, uint(id))
+	t, err := h.repo.GetByID(id)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tiket tidak ditemukan"})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	if tiket == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tiket tidak ditemukan"})
+
+	// proteksi kepemilikan tiket
+	if v := c.Locals("user_id"); v != nil {
+		uid, ok := v.(uint)
+		if ok {
+			var booking models.Booking
+			if err := h.db.First(&booking, t.BookingID).Error; err == nil {
+				if booking.UserID != nil && *booking.UserID != uid {
+					return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+						"error": "tidak berhak mengakses tiket ini",
+					})
+				}
+			}
+		}
 	}
-	return c.JSON(tiket)
+
+	return c.JSON(t)
 }
 
-func (h *TiketHandler) GetTiketByNomorTiket(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	nomor := c.Params("nomor")
-	if nomor == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "nomor tiket diperlukan"})
+// ====================================================================
+//
+//	GET /booking/:id/tiket  → Ambil semua tiket pada satu booking
+//
+// ====================================================================
+func (h *TiketHandler) GetTiketByBooking(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	idUint, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "id booking tidak valid",
+		})
 	}
-	tiket, err := h.repo.GetTiketByNomorTiket(ctx, nomor)
+	bookingID := uint(idUint)
+
+	// cek kepemilikan booking
+	v := c.Locals("user_id")
+	if v == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user tidak terautentikasi"})
+	}
+	uid, ok := v.(uint)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "gagal membaca user id"})
+	}
+
+	var booking models.Booking
+	if err := h.db.First(&booking, bookingID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "booking tidak ditemukan",
+		})
+	}
+
+	if booking.UserID != nil && *booking.UserID != uid {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "tidak berhak mengakses tiket booking ini",
+		})
+	}
+
+	// ambil tiket
+	tickets, err := h.repo.GetByBookingID(bookingID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	if tiket == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tiket tidak ditemukan"})
-	}
-	return c.JSON(tiket)
+
+	return c.JSON(fiber.Map{
+		"booking_id": bookingID,
+		"tiket":      tickets,
+	})
 }
 
-func (h *TiketHandler) GetTiketByPemesananID(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	pid, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id pemesanan tidak valid"})
+// ====================================================================
+//
+//	GET /user/tiket → daftar semua tiket milik user
+//
+// ====================================================================
+func (h *TiketHandler) ListTiketUser(c *fiber.Ctx) error {
+	v := c.Locals("user_id")
+	if v == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user tidak terautentikasi"})
 	}
-	tikets, err := h.repo.GetTiketByPemesananID(ctx, uint(pid))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	uid, ok := v.(uint)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "gagal membaca user id"})
 	}
-	return c.JSON(tikets)
-}
 
-func (h *TiketHandler) GetTiketByPenumpangID(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	pid, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id penumpang tidak valid"})
-	}
-	tikets, err := h.repo.GetTiketByPenumpangID(ctx, uint(pid))
+	tickets, err := h.repo.GetByUserID(uid)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(tikets)
-}
 
-func (h *TiketHandler) GetTiketByJadwalID(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	jid, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id jadwal tidak valid"})
-	}
-	tikets, err := h.repo.GetTiketByJadwalID(ctx, uint(jid))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(tikets)
-}
-
-func (h *TiketHandler) UpdateTiket(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	id, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id tidak valid"})
-	}
-
-	var req models.Tiket
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "body tidak valid: " + err.Error()})
-	}
-
-	req.ID = uint(id)
-
-	existing, err := h.repo.GetTiketByID(ctx, uint(id))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	if existing == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tiket tidak ditemukan"})
-	}
-
-	if err := h.repo.UpdateTiket(ctx, &req); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.JSON(req)
-}
-
-func (h *TiketHandler) DeleteTiket(c *fiber.Ctx) error {
-	ctx := c.UserContext()
-	idParam := c.Params("id")
-	id, err := strconv.ParseUint(idParam, 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "id tidak valid"})
-	}
-
-	existing, err := h.repo.GetTiketByID(ctx, uint(id))
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	if existing == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tiket tidak ditemukan"})
-	}
-
-	if err := h.repo.DeleteTiket(ctx, uint(id)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(fiber.Map{
+		"user_id": uid,
+		"tiket":   tickets,
+	})
 }
