@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import AppText from './AppText';
-import { payBooking } from '../services/api';
+import { payBooking, updateBookingStatus } from '../services/api';
 
 export default function PaymentInstruction({ navigation, route }) {
     const { bookingId, train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod } = route.params || {
@@ -114,13 +114,19 @@ export default function PaymentInstruction({ navigation, route }) {
         }
     };
 
-    const handleWebViewNavigationStateChange = (navState) => {
+    const handleWebViewNavigationStateChange = async (navState) => {
         const { url } = navState;
         
         // Check for success indicators in the URL (Midtrans specific)
         if (url.includes('status_code=200') || url.includes('transaction_status=settlement') || url.includes('transaction_status=capture')) {
             setShowWebView(false);
             setIsPaid(true);
+            
+            // Update status in backend
+            if (bookingId) {
+                await updateBookingStatus(bookingId);
+            }
+
             alert("Pembayaran Berhasil!");
             
             let passengerList = [];
@@ -184,7 +190,6 @@ export default function PaymentInstruction({ navigation, route }) {
                 seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
             }));
         } else {
-            passengerList = [{ name: 'MELVIN MULIAWAN', id: 'mmgacorkang@gmail.com', type: 'Dewasa', seat: 'Ekonomi 3 / 9 A' }];
         }
 
         navigation.navigate('TicketDetail', {

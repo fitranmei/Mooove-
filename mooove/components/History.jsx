@@ -1,53 +1,66 @@
-import React from 'react';
-import { View, ImageBackground, StyleSheet, SectionList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ImageBackground, StyleSheet, SectionList, Image, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import AppText from './AppText';
+import { getUserBookings } from '../services/api';
 
 export default function History({ navigation }) {
-  
-  const historyData = [
-    {
-      title: '08 Mei 2025',
-      data: [
-        {
-          id: '1',
-          bookingCode: 'TFI88JR',
-          status: 'Batal',
-          trainName: 'ANTARKOTA - BIS',
-          origin: 'LLG',
-          destination: 'KPT',
-          price: 'Rp 180.000',
-          type: 'bisnis'
-        },
-        {
-          id: '2',
-          bookingCode: 'ADH09KJ',
-          status: 'Lunas',
-          trainName: 'ANTARKOTA - EKO',
-          origin: 'LLG',
-          destination: 'KPT',
-          price: 'Rp 32.000',
-          type: 'ekonomi'
-        }
-      ]
-    },
-    {
-      title: '25 Maret 2025',
-      data: [
-         {
-          id: '3',
-          bookingCode: 'MJT23UY',
-          status: 'Lunas',
-          trainName: 'ANTARKOTA - BIS',
-          origin: 'KPT',
-          destination: 'LLG',
-          price: 'Rp 180.000',
-          type: 'bisnis'
-        }
-      ]
+  const [historyData, setHistoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchBookings();
     }
-  ];
+  }, [isFocused]);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    const bookings = await getUserBookings();
+    
+    // Group by date
+    const grouped = {};
+    bookings.forEach(booking => {
+      const date = new Date(booking.CreatedAt).toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+      
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      
+      // Determine train name and route (fallback if not populated)
+      // Note: Backend might need to preload Schedule -> Train/Station
+      // Assuming backend returns nested objects or we map them
+      
+      // For now, use safe access or defaults
+      const trainName = booking.TrainSchedule?.kereta?.nama || 'Kereta Api';
+      const origin = booking.TrainSchedule?.asal?.kode || 'KPT';
+      const destination = booking.TrainSchedule?.tujuan?.kode || 'LLG';
+      
+      grouped[date].push({
+        id: booking.ID.toString(),
+        bookingCode: 'BOOK-' + booking.ID,
+        status: booking.Status === 'paid' ? 'Lunas' : (booking.Status === 'cancelled' ? 'Batal' : 'Menunggu'),
+        trainName: trainName,
+        origin: origin,
+        destination: destination,
+        price: `Rp ${booking.TotalPrice.toLocaleString('id-ID')}`,
+        type: booking.TrainSchedule?.kelas || 'Ekonomi'
+      });
+    });
+
+    const sections = Object.keys(grouped).map(date => ({
+      title: date,
+      data: grouped[date]
+    }));
+
+    setHistoryData(sections);
+    setLoading(false);
+  };
 
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
@@ -77,7 +90,7 @@ export default function History({ navigation }) {
             <View style={styles.cardBody}>
                 <View style={styles.trainRow}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="train" size={24} color="#FFF" />
+                        <Image source={require('../assets/images/home-icon-1.png')} style={{width:40, height:40}} />
                     </View>
                     <AppText style={styles.trainName}>{item.trainName}</AppText>
                 </View>
@@ -111,15 +124,26 @@ export default function History({ navigation }) {
         </ImageBackground>
 
         <View style={styles.contentContainer}>
-            <SectionList
-                sections={historyData}
-                keyExtractor={(item, index) => item.id + index}
-                renderItem={renderTicket}
-                renderSectionHeader={renderSectionHeader}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-                stickySectionHeadersEnabled={false}
-            />
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color="#F31260" />
+                </View>
+            ) : (
+                <SectionList
+                    sections={historyData}
+                    keyExtractor={(item, index) => item.id + index}
+                    renderItem={renderTicket}
+                    renderSectionHeader={renderSectionHeader}
+                    contentContainerStyle={{ paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
+                    stickySectionHeadersEnabled={false}
+                    ListEmptyComponent={
+                        <View style={{ alignItems: 'center', marginTop: 50 }}>
+                            <AppText style={{ color: '#888' }}>Belum ada riwayat pemesanan.</AppText>
+                        </View>
+                    }
+                />
+            )}
         </View>
 
         <StatusBar style="light" />
@@ -218,7 +242,6 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#F31260',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,

@@ -60,22 +60,6 @@ export default function About({ navigation }) {
                         ))}
                     </View>
                 </View>
-
-                <View style={styles.section}>
-                    <AppText style={styles.sectionTitle}>Hubungi Kami</AppText>
-                    <View style={styles.contactItem}>
-                        <Ionicons name="mail-outline" size={24} color="#F31260" />
-                        <AppText style={styles.contactText}>support@mooove.id</AppText>
-                    </View>
-                    <View style={styles.contactItem}>
-                        <Ionicons name="call-outline" size={24} color="#F31260" />
-                        <AppText style={styles.contactText}>021-1234-5678</AppText>
-                    </View>
-                    <View style={styles.contactItem}>
-                        <Ionicons name="logo-instagram" size={24} color="#F31260" />
-                        <AppText style={styles.contactText}>@mooove.id</AppText>
-                    </View>
-                </View>
                 
                 <View style={{height: 40}} />
             </ScrollView>

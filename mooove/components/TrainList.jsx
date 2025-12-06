@@ -71,7 +71,7 @@ export default function TrainList({ navigation, route }) {
                     }
                     
                     grouped[key].classes.push({
-                        type: item.kelas,
+                        type: item.kelas ? item.kelas.toUpperCase() : '',
                         price: item.harga_dasar,
                         scheduleId: item.id // Important: This is the ID for booking
                     });

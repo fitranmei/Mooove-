@@ -83,8 +83,9 @@ func (r *ketersediaanRepo) MarkReserved(tx *gorm.DB, inventoryIDs []uint, bookin
 // Men-set status='available', reserved_by_booking=0, reserved_until=NULL, updated_at = now
 func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 	now := time.Now()
+	// Hapus filter status='reserved' agar bisa release status='booked' juga
 	res := tx.Model(&models.KetersediaanKursi{}).
-		Where("reserved_by_booking = ? AND status = ?", bookingID, "reserved").
+		Where("reserved_by_booking = ?", bookingID).
 		UpdateColumns(map[string]interface{}{
 			"status":              "available",
 			"reserved_by_booking": 0,
@@ -96,9 +97,7 @@ func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 		return res.Error
 	}
 	return nil
-}
-
-// GetBySchedule mengambil semua data ketersediaan untuk jadwal tertentu (tanpa locking)
+} // GetBySchedule mengambil semua data ketersediaan untuk jadwal tertentu (tanpa locking)
 func (r *ketersediaanRepo) GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error) {
 	var list []models.KetersediaanKursi
 	if err := r.db.Where("train_schedule_id = ?", scheduleID).Find(&list).Error; err != nil {

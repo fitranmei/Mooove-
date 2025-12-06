@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"github.com/fitranmei/Mooove-/backend/middlewares"
@@ -148,10 +148,10 @@ func RegisterRoutes(app *fiber.App) {
 	// -----------------------
 	jadwalHandler := NewHandlerJadwal(repoJadwal, repoGerbong, repoKetersediaan, dbConn)
 	api.Get("/jadwal", jadwalHandler.ListSemua)
+	api.Get("/jadwal/cari", jadwalHandler.CariJadwal) // ?asal=GMR&tujuan=BDG&tanggal=YYYY-MM-DD
 	api.Get("/jadwal/:id", jadwalHandler.GetByID)
 	api.Post("/jadwal", jadwalHandler.Buat)
 	api.Delete("/jadwal/:id", jadwalHandler.Hapus)
-	api.Get("/jadwal/cari", jadwalHandler.CariJadwal) // ?asal=GMR&tujuan=BDG&tanggal=YYYY-MM-DD
 	api.Get("/jadwal/:id/kursi", jadwalHandler.GetKursiByJadwal)
 
 	// -----------------------
@@ -173,9 +173,8 @@ func RegisterRoutes(app *fiber.App) {
 	api.Get("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.GetBookingByID)
 	api.Get("/user/bookings", middlewares.AuthProtected(dbConn), hBooking.ListBookingsForUser)
 	api.Post("/bookings/:id/pay", middlewares.AuthProtected(dbConn), hBooking.CreatePaymentForBooking)
-	api.Delete("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.DeleteBooking)
-
-	// Webhook provider pembayaran (public, idempotent)
+	api.Put("/bookings/:id/pay-success", middlewares.AuthProtected(dbConn), hBooking.MarkBookingPaid)
+	api.Delete("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.DeleteBooking) // Webhook provider pembayaran (public, idempotent)
 	// PAYMENT
 	api.Post("/bookings/:id/pay", middlewares.AuthProtected(dbConn), hBooking.CreatePaymentForBooking)
 	api.Post("/payments/webhook", hBooking.PaymentWebhook) // Midtrans tidak pakai auth JWTs

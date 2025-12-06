@@ -1,73 +1,259 @@
-import React from 'react';
-import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useIsFocused } from '@react-navigation/native';
 import AppText from './AppText';
+import { getUserBookings, cancelBooking } from '../services/api';
 
 export default function MyTicket({ navigation }) {
-  
-  const activeTickets = [
-    {
-      id: '1',
-      trainName: 'BUKIT SERELO S9',
-      trainClass: 'BISNIS',
-      trainNumber: 'No Kereta EKO 2',
-      origin: 'KERTAPATI (KPT)',
-      destination: 'LUBUKLINGGAU (LLG)',
-      date: 'Selasa 25 Mei 2025',
-      departureTime: '09:00',
-      arrivalTime: '15:25',
-      bookingCode: 'KJB75AU',
-      status: 'Lunas'
+  const [activeTickets, setActiveTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchActiveTickets();
     }
-  ];
+  }, [isFocused]);
+
+  const fetchActiveTickets = async () => {
+    setLoading(true);
+    try {
+      const bookings = await getUserBookings();
+      // Filter paid and pending bookings
+      const activeBookings = bookings.filter(b => b.Status === 'paid' || b.Status === 'pending');
+      
+      const formatted = activeBookings.map(booking => {
+        const schedule = booking.TrainSchedule || {};
+        const kereta = schedule.kereta || {};
+        const asal = schedule.asal || {};
+        const tujuan = schedule.tujuan || {};
+        
+        // Format date
+        const dateObj = new Date(schedule.tanggal || booking.CreatedAt);
+        const dateStr = dateObj.toLocaleDateString('id-ID', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+
+        // Format time from ISO string
+        const formatTime = (isoString) => {
+            if (!isoString) return '00:00';
+            const d = new Date(isoString);
+            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+        };
+
+        const passengerCount = booking.Penumpangs ? booking.Penumpangs.length : 1;
+        const unitPrice = booking.TotalPrice / passengerCount;
+        
+        const getSeat = (p) => {
+            if (p.kursi && typeof p.kursi === 'string') return p.kursi;
+            if (p.nomor_kursi) return p.nomor_kursi;
+            if (p.seat) return p.seat;
+
+            if (p.Kursi && p.Kursi.nomor_kursi) return p.Kursi.nomor_kursi;
+            if (p.Kursi && p.Kursi.NomorKursi) return p.Kursi.NomorKursi;
+            if (p.kursi && typeof p.kursi === 'object' && p.kursi.nomor_kursi) return p.kursi.nomor_kursi;
+            return '-';
+        };
+
+        const trainClassName = (schedule.kelas || schedule.Kelas || 'Ekonomi').toUpperCase();
+
+        return {
+          id: booking.ID.toString(),
+          trainName: kereta.nama || 'Kereta Api',
+          trainClass: trainClassName,
+          trainNumber: kereta.kode || 'KA-001',
+          origin: `${asal.nama || 'Origin'} (${asal.kode || 'ORG'})`,
+          destination: `${tujuan.nama || 'Destination'} (${tujuan.kode || 'DST'})`,
+          date: dateStr,
+          departureTime: formatTime(schedule.waktu_berangkat),
+          arrivalTime: formatTime(schedule.waktu_tiba),
+          bookingCode: 'BOOK-' + booking.ID,
+          status: booking.Status === 'paid' ? 'Lunas' : 'Menunggu Pembayaran',
+          rawStatus: booking.Status,
+          totalPrice: booking.TotalPrice,
+          // Pass raw data for navigation
+          rawData: {
+            bookingCode: 'BOOK-' + booking.ID,
+            bookingId: booking.ID,
+            train: { 
+                name: kereta.nama, 
+                departureTime: formatTime(schedule.waktu_berangkat), 
+                arrivalTime: formatTime(schedule.waktu_tiba),
+                price: unitPrice 
+            },
+            selectedClass: { type: trainClassName, price: unitPrice },
+            origin: `${asal.nama || 'Origin'} (${asal.kode || 'ORG'})`,
+            destination: `${tujuan.nama || 'Destination'} (${tujuan.kode || 'DST'})`,
+            date: dateStr,
+            passengers: passengerCount,
+            allPassengers: (booking.Penumpangs || []).map((p, index) => {
+                let seatStr = '-';
+                
+                // 1. Try direct property on passenger
+                if (p.kursi && typeof p.kursi === 'string') seatStr = p.kursi;
+                else if (p.nomor_kursi) seatStr = p.nomor_kursi;
+                else if (p.seat) seatStr = p.seat;
+                
+                // 2. Try nested Kursi object on passenger (Backend Update Support)
+                const k = p.Kursi || p.kursi;
+                if (seatStr === '-' && k) {
+                     const num = k.nomor_kursi || k.NomorKursi;
+                     
+                     if (num) {
+                         // Try to get carriage info from nested Gerbong
+                         const g = k.Gerbong || k.gerbong;
+                         if (g) {
+                             const className = (g.Kelas || g.kelas || trainClassName).toUpperCase();
+                             const carriageNum = g.NomorGerbong || g.nomor_gerbong || '';
+                             seatStr = `${className} ${carriageNum} / ${num}`;
+                         } else {
+                             seatStr = num;
+                         }
+                     }
+                }
+                
+                // 3. Try matching index in booking.Kursis / booking.Seats
+                if (seatStr === '-') {
+                    const seats = booking.Kursis || booking.Seats || [];
+                    if (seats[index]) {
+                        const s = seats[index];
+                        const num = s.nomor_kursi || s.NomorKursi || s.seat_number || s.SeatNumber;
+                        if (num) {
+                             // Try to get carriage info
+                             const carriage = s.Gerbong ? (s.Gerbong.nama || s.Gerbong.Nama) : 
+                                              (s.gerbong ? (s.gerbong.nama || s.gerbong.nomor_gerbong) : null);
+                             
+                             if (carriage) {
+                                 seatStr = `${trainClassName} ${carriage} / ${num}`;
+                             } else {
+                                 seatStr = num;
+                             }
+                        }
+                    }
+                }
+
+                return {
+                    name: p.nama,
+                    id: p.no_identitas,
+                    type: 'Dewasa',
+                    seat: seatStr
+                };
+            }),
+            // Mock/Default for missing data
+            selectedSeat: 'Any', 
+            selectedCarriage: 'Any',
+            selectedPaymentMethod: { name: 'Online Payment', icon: 'card-outline' }
+          }
+        };
+      });
+      
+      setActiveTickets(formatted);
+    } catch (error) {
+      console.error("Failed to fetch tickets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = (bookingId) => {
+    Alert.alert(
+      "Batalkan Tiket",
+      "Apakah Anda yakin ingin membatalkan tiket ini? Kursi akan tersedia kembali.",
+      [
+        { text: "Tidak", style: "cancel" },
+        { 
+          text: "Ya, Batalkan", 
+          onPress: async () => {
+            setLoading(true);
+            const result = await cancelBooking(bookingId);
+            if (result) {
+              Alert.alert("Sukses", "Tiket berhasil dibatalkan.");
+              fetchActiveTickets(); // Refresh list
+            } else {
+              Alert.alert("Gagal", "Gagal membatalkan tiket.");
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handlePressTicket = (item) => {
+    if (item.rawStatus === 'paid') {
+        navigation.navigate('TicketDetail', item.rawData);
+    }
+  };
+
+  const handlePay = (item) => {
+    navigation.navigate('PaymentInstruction', item.rawData);
+  };
 
   const renderTicket = ({ item }) => (
-    <View style={styles.ticketCard}>
-      <View style={styles.cardHeader}>
-        <AppText style={styles.bookingLabel}>Kode Pemesanan <AppText style={styles.bookingCode}>{item.bookingCode}</AppText></AppText>
-        <TouchableOpacity style={styles.cancelButton}>
-          <AppText style={styles.cancelText}>Batalkan Tiket</AppText>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.cardBody}>
-        <View style={styles.trainInfoRow}>
-          <View>
-            <AppText style={styles.trainName}>{item.trainName}</AppText>
-            <AppText style={styles.trainDetails}>{item.trainClass}  <AppText style={{color: '#A4A3A3'}}>{item.trainNumber}</AppText></AppText>
-          </View>
-          <Image source={require('../assets/images/logo-top.png')} style={styles.cardLogo} /> 
+    <TouchableOpacity 
+        activeOpacity={item.rawStatus === 'paid' ? 0.7 : 1} 
+        onPress={() => handlePressTicket(item)}
+        disabled={item.rawStatus !== 'paid'}
+        style={{ marginBottom: 20 }}
+    >
+        <View style={[styles.ticketCard, { marginBottom: 0 }]}>
+        <View style={[styles.cardHeader, item.rawStatus === 'pending' && { backgroundColor: '#808080' }]}>
+            <AppText style={styles.bookingLabel}>Kode Pemesanan <AppText style={styles.bookingCode}>{item.bookingCode}</AppText></AppText>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                {item.rawStatus === 'pending' && (
+                    <TouchableOpacity 
+                        style={{backgroundColor: '#FFF3CD', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginRight: 8}}
+                        onPress={() => handlePay(item)}
+                    >
+                        <AppText style={{color: '#856404', fontSize: 12, fontFamily: 'PlusJakartaSans_700Bold'}}>Bayar</AppText>
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancel(item.id)}>
+                    <AppText style={[styles.cancelText, item.rawStatus === 'pending' && { color: '#808080' }]}>Batalkan Tiket</AppText>
+                </TouchableOpacity>
+            </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={styles.cardBody}>
+            <View style={styles.trainInfoRow}>
+            <View>
+                <AppText style={styles.trainName}>{item.trainName}</AppText>
+                <AppText style={styles.trainDetails}>{item.trainClass}</AppText>
+            </View>
+            <Image source={require('../assets/images/logo-top.png')} style={styles.cardLogo} /> 
+            </View>
 
-        <View style={styles.timelineContainer}>
-           <View style={styles.timelineLineContainer}>
-              <View style={styles.timelineDotOutline} />
-              <View style={styles.timelineLine} />
-              <View style={styles.timelineDotFilled} />
-           </View>
+            <View style={styles.divider} />
 
-           <View style={styles.stationsContainer}>
-              <View style={styles.stationItem}>
-                 <AppText style={styles.time}>{item.departureTime}</AppText>
-                 <View style={{marginLeft: 15}}>
-                    <AppText style={styles.stationName}>{item.origin}</AppText>
-                    <AppText style={styles.date}>Selasa    {item.date.split(' ').slice(1).join(' ')}</AppText>
-                 </View>
-              </View>
+            <View style={styles.timelineContainer}>
+            <View style={styles.timelineLineContainer}>
+                <View style={styles.timelineDotOutline} />
+                <View style={styles.timelineLine} />
+                <View style={styles.timelineDotFilled} />
+            </View>
 
-              <View style={[styles.stationItem, {marginTop: 25}]}>
-                 <AppText style={styles.time}>{item.arrivalTime}</AppText>
-                 <View style={{marginLeft: 15}}>
-                    <AppText style={styles.stationName}>{item.destination}</AppText>
-                    <AppText style={styles.date}>Selasa    {item.date.split(' ').slice(1).join(' ')}</AppText>
-                 </View>
-              </View>
-           </View>
+            <View style={styles.stationsContainer}>
+                <View style={styles.stationItem}>
+                    <AppText style={styles.time}>{item.departureTime}</AppText>
+                    <View style={{marginLeft: 15}}>
+                        <AppText style={styles.stationName}>{item.origin}</AppText>
+                        <AppText style={styles.date}>{item.date}</AppText>
+                    </View>
+                </View>
+
+                <View style={[styles.stationItem, {marginTop: 25}]}>
+                    <AppText style={styles.time}>{item.arrivalTime}</AppText>
+                    <View style={{marginLeft: 15}}>
+                        <AppText style={styles.stationName}>{item.destination}</AppText>
+                        <AppText style={styles.date}>{item.date}</AppText>
+                    </View>
+                </View>
+            </View>
+            </View>
         </View>
-      </View>
-    </View>
+        </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -82,23 +268,25 @@ export default function MyTicket({ navigation }) {
         </ImageBackground>
 
         <View style={styles.contentContainer}>
-            <View style={styles.serviceSection}>
-                <AppText style={styles.sectionTitle}>Tiket dan Layanan Saya</AppText>
-                <View style={styles.serviceItem}>
-                    <View style={styles.iconContainer}>
-                        <Image source={require('../assets/images/myticket.png')} style={styles.serviceIcon} />
-                    </View>
-                    <AppText style={styles.serviceText}>Antar Kota</AppText>
-                </View>
-            </View>
 
-            <FlatList
-                data={activeTickets}
-                renderItem={renderTicket}
-                keyExtractor={item => item.id}
-                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 }}>
+                    <ActivityIndicator size="large" color="#F31260" />
+                </View>
+            ) : (
+                <FlatList
+                    data={activeTickets}
+                    renderItem={renderTicket}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={{ alignItems: 'center', marginTop: 50 }}>
+                            <AppText style={{ color: '#888' }}>Tidak ada tiket aktif.</AppText>
+                        </View>
+                    }
+                />
+            )}
         </View>
 
         <StatusBar style="light" />

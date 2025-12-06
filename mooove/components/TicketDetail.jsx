@@ -112,7 +112,7 @@ export default function TicketDetail({ route, navigation }) {
                         <Ionicons name="train-outline" size={24} color="#F31260" />
                         <View style={{marginLeft: 10}}>
                             <AppText style={styles.trainName}>{train.name}</AppText>
-                            <AppText style={styles.trainClass}>{selectedClass.type}</AppText>
+                            <AppText style={styles.trainClass}>{(selectedClass.type || 'EKONOMI').toUpperCase()}</AppText>
                         </View>
                         <AppText style={styles.duration}>6j 10m</AppText>
                     </View>
@@ -175,7 +175,7 @@ export default function TicketDetail({ route, navigation }) {
                                 <AppText style={styles.passengerIdLarge}>{selectedPassenger.id}</AppText>
                                 
                                 <View style={styles.seatBadge}>
-                                    <AppText style={styles.seatBadgeText}>{selectedPassenger.seat}</AppText>
+                                    <AppText style={styles.seatBadgeText}>{(selectedPassenger.seat || '-').toUpperCase()}</AppText>
                                 </View>
 
                                 <AppText style={styles.boardingNote}>

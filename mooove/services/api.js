@@ -13,7 +13,6 @@ const api = axios.create({
     },
 });
 
-// Log requests for debugging and add Auth Token
 api.interceptors.request.use(async (request) => {
     console.log('Starting Request:', request.method.toUpperCase(), request.baseURL + request.url);
     
@@ -40,11 +39,12 @@ export const getSchedules = async (origin, destination, date) => {
         const dateObj = new Date(date);
         const dateStr = dateObj.toISOString().split('T')[0];
         
-        const response = await api.get('/jadwal', {
+        // Use /jadwal/cari for filtering
+        const response = await api.get('/jadwal/cari', {
             params: {
-                origin,
-                destination,
-                date: dateStr
+                asal: origin,        // Backend expects 'asal'
+                tujuan: destination, // Backend expects 'tujuan'
+                tanggal: dateStr     // Backend expects 'tanggal'
             }
         });
         // Handle if response is directly the array or wrapped in data
@@ -87,6 +87,36 @@ export const payBooking = async (bookingId) => {
         if (error.response) {
             console.error("Error Response Data:", JSON.stringify(error.response.data, null, 2));
         }
+        return null;
+    }
+};
+
+export const updateBookingStatus = async (bookingId) => {
+    try {
+        const response = await api.put(`/bookings/${bookingId}/pay-success`);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        return null;
+    }
+};
+
+export const getUserBookings = async () => {
+    try {
+        const response = await api.get('/user/bookings');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching user bookings:", error);
+        return [];
+    }
+};
+
+export const cancelBooking = async (bookingId) => {
+    try {
+        const response = await api.delete(`/bookings/${bookingId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error cancelling booking:", error);
         return null;
     }
 };
