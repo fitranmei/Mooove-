@@ -20,6 +20,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Image } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 
@@ -28,6 +29,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -35,8 +37,8 @@ function MainTabs() {
         tabBarActiveTintColor: '#F31260',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: { 
-          height: 80, 
-          paddingBottom: 20, 
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 20), 
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 20, 
           paddingTop: 10,
         },
         tabBarLabelStyle: {
@@ -84,14 +86,15 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-      
-        <Stack.Screen 
-          name="welcome" 
-          component={Welcome} 
-          options={{ headerShown: false }}
-        />
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator>
+        
+          <Stack.Screen 
+            name="welcome" 
+            component={Welcome} 
+            options={{ headerShown: false }}
+          />
 
         <Stack.Screen 
           name="register" 
@@ -165,8 +168,9 @@ export default function App() {
           options={{ headerShown: false }}
         />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 

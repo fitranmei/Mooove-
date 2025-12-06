@@ -67,10 +67,6 @@ export default function Login({ navigation }) {
                                 </TouchableOpacity>
                             </View>
 
-                            <TouchableOpacity style={{ marginHorizontal: 30 }} onPress={() => navigation.navigate('register')}>
-                                <AppText style={{ color: '#F31260', marginHorizontal: 10, marginBottom: 20 }}>Lupa Password?</AppText>
-                            </TouchableOpacity>
-
                             <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
                                 {loading ? (
                                     <ActivityIndicator color="#FFFFFF" />
@@ -78,11 +74,12 @@ export default function Login({ navigation }) {
                                     <AppText style={styles.textButton}>Masuk</AppText>
                                 )}
                             </TouchableOpacity>
-                            <AppText style={styles.text}>Belum punya akun?
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 5 }}>
+                                <AppText style={styles.text}>Belum punya akun?</AppText>
                                 <TouchableOpacity onPress={() => navigation.navigate('register')}>
                                     <AppText style={styles.link}> Buat Disini</AppText>
                                 </TouchableOpacity>
-                            </AppText>
+                            </View>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>

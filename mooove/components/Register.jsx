@@ -104,11 +104,12 @@ export default function Register({ navigation }) {
                                     <AppText style={styles.textButton}>Daftar</AppText>
                                 )}
                             </TouchableOpacity>
-                            <AppText style={styles.text}>Sudah punya akun?
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 5 }}>
+                                <AppText style={styles.text}>Sudah punya akun?</AppText>
                                 <TouchableOpacity onPress={() => navigation.navigate('login')}>
                                     <AppText style={styles.link}> Login Disini</AppText>
                                 </TouchableOpacity>
-                            </AppText>
+                            </View>
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>

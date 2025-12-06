@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ImageBackground, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AppText from './AppText';
 
 export default function Welcome({ navigation }) {
@@ -9,12 +10,14 @@ export default function Welcome({ navigation }) {
         <ImageBackground
         source={require('../assets/images/bg-welcome.png')}
         style={styles.bgimage}>
-            <AppText style={styles.title}>Pesan Tiket di Mana Saja!</AppText>
-            <AppText style={styles.subtitle}>Dengan menggunakan Mooove, kamu akan mendapatkan banyak keuntungan dan tidak perlu khawatir lagi untuk memesan tiket kereta api di mana saja.</AppText>
-            <Image source={require('../assets/images/welcome-1.png')} style={styles.image}></Image>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('register')}>
-                <AppText style={styles.textButton}>Lanjutkan</AppText>
-            </TouchableOpacity>
+            <SafeAreaView style={{ flex: 1 }} edges={['bottom', 'left', 'right']}>
+                <AppText style={styles.title}>Pesan Tiket di Mana Saja!</AppText>
+                <AppText style={styles.subtitle}>Dengan menggunakan Mooove, kamu akan mendapatkan banyak keuntungan dan tidak perlu khawatir lagi untuk memesan tiket kereta api di mana saja.</AppText>
+                <Image source={require('../assets/images/welcome-1.png')} style={styles.image}></Image>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('register')}>
+                    <AppText style={styles.textButton}>Lanjutkan</AppText>
+                </TouchableOpacity>
+            </SafeAreaView>
             <StatusBar style="auto" />
         </ImageBackground>
     </View>
@@ -50,7 +53,7 @@ const styles = StyleSheet.create({
   image: {
     width: 400,
     height: 400,
-    alignItems: 'center',
+    alignSelf: 'center',
   },
   button: {
     backgroundColor: '#FFFFFF',
