@@ -11,14 +11,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// HandlerJadwal menangani endpoint terkait jadwal
 type HandlerJadwal struct {
 	repo             repositories.JadwalRepo
 	gerbongRepo      repositories.GerbongRepo
 	ketersediaanRepo repositories.KetersediaanRepo
 }
 
-// NewHandlerJadwal membuat instance handler jadwal
 func NewHandlerJadwal(repo repositories.JadwalRepo, gerbongRepo repositories.GerbongRepo, ketersediaanRepo repositories.KetersediaanRepo, db *gorm.DB) *HandlerJadwal {
 	return &HandlerJadwal{
 		repo:             repo,
@@ -27,7 +25,6 @@ func NewHandlerJadwal(repo repositories.JadwalRepo, gerbongRepo repositories.Ger
 	}
 }
 
-// Payload untuk membuat jadwal
 type createJadwalPayload struct {
 	KeretaID       uint   `json:"kereta_id"`
 	AsalID         uint   `json:"asal_id"`
@@ -39,28 +36,19 @@ type createJadwalPayload struct {
 	HargaDasar     int64  `json:"harga_dasar"`
 }
 
-// parseTimeFlexible mencoba beberapa layout umum untuk mengonversi string ke time.Time
 func parseTimeFlexible(input string) (time.Time, error) {
-	// RFC3339 (paling aman)
 	if t, err := time.Parse(time.RFC3339, input); err == nil {
 		return t, nil
 	}
-	// Tanpa offset: 2006-01-02T15:04:05
 	if t, err := time.Parse("2006-01-02T15:04:05", input); err == nil {
 		return t, nil
 	}
-	// Jika hanya tanggal diberikan, anggap jam midnight lokal
 	if t, err := time.Parse("2006-01-02", input); err == nil {
 		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.Local), nil
 	}
 	return time.Time{}, fiber.ErrBadRequest
 }
 
-// =========================
-// Handlers
-// =========================
-
-// ListSemua GET /api/v1/jadwal
 func (h *HandlerJadwal) ListSemua(c *fiber.Ctx) error {
 	list, err := h.repo.ListSemua()
 	if err != nil {
@@ -69,7 +57,6 @@ func (h *HandlerJadwal) ListSemua(c *fiber.Ctx) error {
 	return c.JSON(list)
 }
 
-// GetByID GET /api/v1/jadwal/:id
 func (h *HandlerJadwal) GetByID(c *fiber.Ctx) error {
 	id64, _ := strconv.ParseUint(c.Params("id"), 10, 64)
 	id := uint(id64)
@@ -81,15 +68,12 @@ func (h *HandlerJadwal) GetByID(c *fiber.Ctx) error {
 	return c.JSON(j)
 }
 
-// Buat POST /api/v1/jadwal
-// Menerima payload sesuai createJadwalPayload dan mengembalikan jadwal lengkap (dengan relasi Kereta/Asal/Tujuan/Gerbongs)
 func (h *HandlerJadwal) Buat(c *fiber.Ctx) error {
 	var payload createJadwalPayload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "payload tidak valid"})
 	}
 
-	// validasi sederhana
 	if payload.KeretaID == 0 || payload.AsalID == 0 || payload.TujuanID == 0 {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "kereta_id, asal_id, dan tujuan_id wajib diisi"})
 	}
@@ -99,12 +83,10 @@ func (h *HandlerJadwal) Buat(c *fiber.Ctx) error {
 	if payload.Kelas == "" {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "kelas wajib diisi (eksekutif/bisnis/ekonomi)"})
 	}
-	// validasi tanggal format YYYY-MM-DD (simpan sebagai string di model)
 	if _, err := time.Parse("2006-01-02", payload.Tanggal); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "format tanggal harus YYYY-MM-DD"})
 	}
 
-	// parse waktu berangkat & tiba
 	wb, err := parseTimeFlexible(payload.WaktuBerangkat)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "format waktu_berangkat tidak valid; gunakan RFC3339 atau 2006-01-02T15:04:05"})
@@ -132,11 +114,9 @@ func (h *HandlerJadwal) Buat(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// kembalikan jadwal lengkap (repo.Buat sudah melakukan preload relasi)
 	return c.Status(http.StatusCreated).JSON(created)
 }
 
-// Hapus DELETE /api/v1/jadwal/:id
 func (h *HandlerJadwal) Hapus(c *fiber.Ctx) error {
 	id64, _ := strconv.ParseUint(c.Params("id"), 10, 64)
 	id := uint(id64)
@@ -147,12 +127,11 @@ func (h *HandlerJadwal) Hapus(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "jadwal dihapus"})
 }
 
-// CariJadwal GET /api/v1/jadwal/cari?asal=1&tujuan=2&tanggal=2025-12-10&kelas=eksekutif
 func (h *HandlerJadwal) CariJadwal(c *fiber.Ctx) error {
-	asal := c.Query("asal")       // bisa id (string) atau kosong
-	tujuan := c.Query("tujuan")   // bisa id (string) atau kosong
-	tanggal := c.Query("tanggal") // wajib, format YYYY-MM-DD
-	kelas := c.Query("kelas")     // optional
+	asal := c.Query("asal")
+	tujuan := c.Query("tujuan")
+	tanggal := c.Query("tanggal")
+	kelas := c.Query("kelas")
 
 	if tanggal == "" {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "parameter tanggal wajib diisi (YYYY-MM-DD)"})
@@ -172,36 +151,30 @@ func (h *HandlerJadwal) CariJadwal(c *fiber.Ctx) error {
 	})
 }
 
-// GetKursiByJadwal GET /api/v1/jadwal/:id/kursi
 func (h *HandlerJadwal) GetKursiByJadwal(c *fiber.Ctx) error {
 	id, _ := strconv.Atoi(c.Params("id"))
 	jadwalID := uint(id)
 
-	// 1. Ambil data jadwal untuk tahu KeretaID dan Kelas
 	jadwal, err := h.repo.GetByID(jadwalID)
 	if err != nil {
 		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "jadwal tidak ditemukan"})
 	}
 
-	// 2. Ambil gerbong yang sesuai dengan KeretaID DAN Kelas jadwal
 	gerbongs, err := h.gerbongRepo.ListByKeretaAndKelas(jadwal.KeretaID, jadwal.Kelas)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "gagal mengambil data gerbong"})
 	}
 
-	// 3. Ambil data ketersediaan (booked/reserved) untuk jadwal ini
 	ketersediaan, err := h.ketersediaanRepo.GetBySchedule(jadwalID)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "gagal mengambil data ketersediaan"})
 	}
 
-	// Map status ketersediaan by SeatID untuk lookup cepat
 	statusMap := make(map[uint]string)
 	for _, k := range ketersediaan {
 		statusMap[k.SeatID] = k.Status
 	}
 
-	// 4. Susun response
 	type SeatResp struct {
 		ID         uint   `json:"id"`
 		NomorKursi string `json:"nomor_kursi"`

@@ -32,9 +32,7 @@ func (r *bookingRepo) GetByID(id uint) (*models.Booking, error) {
 	return &b, nil
 }
 
-// Tambahkan method Save untuk menyimpan perubahan booking di dalam tx
 func (r *bookingRepo) SimpanUpdate(tx *gorm.DB, b *models.Booking) error {
-	// jika tx != nil gunakan tx, kalau nil gunakan r.db
 	if tx != nil {
 		return tx.Save(b).Error
 	}

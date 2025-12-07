@@ -97,7 +97,6 @@ func InitHandlers(
 	repoKetersediaan = ketersediaanRepo
 	repoPayment = paymentRepo
 	repoGerbong = gerbongRepo
-	// repoTiket = tiketRepo
 
 	authServiceGlobal = authSvc
 	paymentSvc = paySvc
@@ -105,27 +104,19 @@ func InitHandlers(
 	dbConn = db
 }
 
-// RegisterRoutes mendaftarkan semua route API
 func RegisterRoutes(app *fiber.App) {
-	// health
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("API is running")
 	})
 
 	api := app.Group("/api/v1")
 
-	// -----------------------
-	// AUTH (publik & profile)
-	// -----------------------
 	authHandler := NewAuthHandler(authServiceGlobal)
 	api.Post("/auth/register", authHandler.Register)
 	api.Post("/auth/login", authHandler.Login)
 
 	api.Get("/auth/me", middlewares.AuthProtected(dbConn), authHandler.Me)
 
-	// -----------------------
-	// STASIUN (public / admin)
-	// -----------------------
 	stasiunHandler := NewHandlerStasiun(repoStasiun)
 	api.Get("/stasiun", stasiunHandler.ListSemua)
 	api.Get("/stasiun/:id", stasiunHandler.GetByID)
@@ -133,9 +124,6 @@ func RegisterRoutes(app *fiber.App) {
 	api.Put("/stasiun/:id", stasiunHandler.Update)
 	api.Delete("/stasiun/:id", stasiunHandler.Hapus)
 
-	// -----------------------
-	// KERETA (public / admin)
-	// -----------------------
 	keretaHandler := NewHandlerKereta(repoKereta)
 	api.Get("/kereta", keretaHandler.ListSemua)
 	api.Get("/kereta/:id", keretaHandler.GetByID)
@@ -143,20 +131,14 @@ func RegisterRoutes(app *fiber.App) {
 	api.Put("/kereta/:id", keretaHandler.Update)
 	api.Delete("/kereta/:id", keretaHandler.Hapus)
 
-	// -----------------------
-	// JADWAL (publik)
-	// -----------------------
 	jadwalHandler := NewHandlerJadwal(repoJadwal, repoGerbong, repoKetersediaan, dbConn)
 	api.Get("/jadwal", jadwalHandler.ListSemua)
-	api.Get("/jadwal/cari", jadwalHandler.CariJadwal) // ?asal=GMR&tujuan=BDG&tanggal=YYYY-MM-DD
+	api.Get("/jadwal/cari", jadwalHandler.CariJadwal)
 	api.Get("/jadwal/:id", jadwalHandler.GetByID)
 	api.Post("/jadwal", jadwalHandler.Buat)
 	api.Delete("/jadwal/:id", jadwalHandler.Hapus)
 	api.Get("/jadwal/:id/kursi", jadwalHandler.GetKursiByJadwal)
 
-	// -----------------------
-	// GERBONG & KURSI
-	// -----------------------
 	hGerbong := NewHandlerGerbong()
 	api.Get("/gerbong", hGerbong.ListSemuaGerbong)
 	api.Get("/gerbong/:id", hGerbong.GetGerbongByID)
@@ -165,24 +147,13 @@ func RegisterRoutes(app *fiber.App) {
 	api.Delete("/gerbong/:id", hGerbong.HapusGerbong)
 	api.Get("/gerbong/:id/kursi", hGerbong.ListKursiByGerbong)
 
-	// -----------------------
-	// BOOKING & PEMBAYARAN
-	// -----------------------
 	hBooking := NewHandlerBooking(repoBooking, repoKetersediaan, dbConn)
 	api.Post("/bookings", middlewares.AuthProtected(dbConn), hBooking.CreateBooking)
 	api.Get("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.GetBookingByID)
 	api.Get("/user/bookings", middlewares.AuthProtected(dbConn), hBooking.ListBookingsForUser)
 	api.Post("/bookings/:id/pay", middlewares.AuthProtected(dbConn), hBooking.CreatePaymentForBooking)
 	api.Put("/bookings/:id/pay-success", middlewares.AuthProtected(dbConn), hBooking.MarkBookingPaid)
-	api.Delete("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.DeleteBooking) // Webhook provider pembayaran (public, idempotent)
-	// PAYMENT
-	api.Post("/bookings/:id/pay", middlewares.AuthProtected(dbConn), hBooking.CreatePaymentForBooking)
-	api.Post("/payments/webhook", hBooking.PaymentWebhook) // Midtrans tidak pakai auth JWTs
-
-	// TIket
-	// tiketHandler := NewTiketHandler(dbConn, repoTiket)
-	// api.Get("/tiket/:id", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByID)
-	// api.Get("/booking/:id/tiket", middlewares.AuthProtected(dbConn), tiketHandler.GetTiketByBooking)
-	// api.Get("/user/tiket", middlewares.AuthProtected(dbConn), tiketHandler.ListTiketUser)
+	api.Delete("/bookings/:id", middlewares.AuthProtected(dbConn), hBooking.DeleteBooking)
+	api.Post("/payments/webhook", hBooking.PaymentWebhook)
 
 }

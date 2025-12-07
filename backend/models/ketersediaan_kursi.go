@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// KetersediaanKursi: ketersediaan kursi per train_schedule
 type KetersediaanKursi struct {
 	ID                uint   `gorm:"primaryKey"`
 	TrainScheduleID   uint   `gorm:"index:idx_schedule_seat,unique"`

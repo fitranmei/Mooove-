@@ -27,15 +27,9 @@ func StartReservedCleanup(ctx context.Context, db *gorm.DB, interval time.Durati
 	}()
 }
 
-// cleanupOnce melakukan 1 kali update: ubah status reserved -> available
-// untuk semua baris yang reserved_until < NOW()
 func cleanupOnce(db *gorm.DB) {
-
 	now := time.Now()
 
-	// ==========================
-	// 1. RELEASE KURSI EXPIRED
-	// ==========================
 	res := db.Model(&models.KetersediaanKursi{}).
 		Where("status = ? AND reserved_until IS NOT NULL AND reserved_until < ?", "reserved", now).
 		Updates(map[string]interface{}{
@@ -53,11 +47,6 @@ func cleanupOnce(db *gorm.DB) {
 		log.Printf("[cleanup] me-release %d kursi expired", res.RowsAffected)
 	}
 
-	// ==========================
-	// 2. CANCEL BOOKING EXPIRED
-	// ==========================
-
-	// Ambil semua booking pending
 	var pendingBookings []models.Booking
 	if err := db.Where("status = ?", "pending").Find(&pendingBookings).Error; err != nil {
 		log.Printf("[cleanup] gagal mengambil booking pending: %v", err)
@@ -65,8 +54,6 @@ func cleanupOnce(db *gorm.DB) {
 	}
 
 	for _, b := range pendingBookings {
-
-		// Cek apakah booking masih punya kursi reserved
 		var countReserved int64
 		err := db.Model(&models.KetersediaanKursi{}).
 			Where("reserved_by_booking = ?", b.ID).
@@ -78,7 +65,6 @@ func cleanupOnce(db *gorm.DB) {
 			continue
 		}
 
-		// Jika tidak ada kursi reserved = booking expired → CANCEL
 		if countReserved == 0 {
 			err := db.Model(&models.Booking{}).
 				Where("id = ? AND status = ?", b.ID, "pending").

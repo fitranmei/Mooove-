@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// KursiRepo interface menyediakan operasi untuk model Kursi
 type KursiRepo interface {
 	Buat(k *models.Kursi) error
 	BuatBatch(kursis []models.Kursi) error
@@ -31,7 +30,6 @@ func (r *kursiRepo) Buat(k *models.Kursi) error {
 	return r.db.Create(k).Error
 }
 
-// BuatBatch melakukan insert banyak kursi sekaligus (efisien untuk generator)
 func (r *kursiRepo) BuatBatch(kursis []models.Kursi) error {
 	if len(kursis) == 0 {
 		return nil
@@ -74,7 +72,6 @@ func (r *kursiRepo) Delete(id uint) error {
 	return nil
 }
 
-// DeleteByGerbong menghapus semua kursi milik gerbong (berguna saat recreate)
 func (r *kursiRepo) DeleteByGerbong(gerbongID uint) error {
 	return r.db.Where("gerbong_id = ?", gerbongID).Delete(&models.Kursi{}).Error
 }

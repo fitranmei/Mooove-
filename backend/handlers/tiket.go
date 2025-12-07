@@ -27,11 +27,6 @@ func NewTiketHandler(db *gorm.DB, repo TiketRepoInterface) *TiketHandler {
 	}
 }
 
-// ====================================================================
-//
-//	GET /tiket/:id  → Ambil detail satu tiket
-//
-// ====================================================================
 func (h *TiketHandler) GetTiketByID(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	idUint, err := strconv.ParseUint(idStr, 10, 64)
@@ -50,7 +45,6 @@ func (h *TiketHandler) GetTiketByID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// proteksi kepemilikan tiket
 	if v := c.Locals("user_id"); v != nil {
 		uid, ok := v.(uint)
 		if ok {
@@ -68,11 +62,6 @@ func (h *TiketHandler) GetTiketByID(c *fiber.Ctx) error {
 	return c.JSON(t)
 }
 
-// ====================================================================
-//
-//	GET /booking/:id/tiket  → Ambil semua tiket pada satu booking
-//
-// ====================================================================
 func (h *TiketHandler) GetTiketByBooking(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	idUint, err := strconv.ParseUint(idStr, 10, 64)
@@ -83,7 +72,6 @@ func (h *TiketHandler) GetTiketByBooking(c *fiber.Ctx) error {
 	}
 	bookingID := uint(idUint)
 
-	// cek kepemilikan booking
 	v := c.Locals("user_id")
 	if v == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user tidak terautentikasi"})
@@ -106,7 +94,6 @@ func (h *TiketHandler) GetTiketByBooking(c *fiber.Ctx) error {
 		})
 	}
 
-	// ambil tiket
 	tickets, err := h.repo.GetByBookingID(bookingID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -118,11 +105,6 @@ func (h *TiketHandler) GetTiketByBooking(c *fiber.Ctx) error {
 	})
 }
 
-// ====================================================================
-//
-//	GET /user/tiket → daftar semua tiket milik user
-//
-// ====================================================================
 func (h *TiketHandler) ListTiketUser(c *fiber.Ctx) error {
 	v := c.Locals("user_id")
 	if v == nil {

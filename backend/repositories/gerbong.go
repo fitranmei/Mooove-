@@ -37,7 +37,6 @@ func (r *gerbongRepo) GetByID(id uint) (*models.Gerbong, error) {
 	return &g, nil
 }
 
-// ListByKereta mengembalikan semua gerbong untuk kereta tertentu, diurutkan berdasarkan nomor gerbong
 func (r *gerbongRepo) ListByKereta(keretaID uint) ([]models.Gerbong, error) {
 	var list []models.Gerbong
 	if err := r.db.Where("kereta_id = ?", keretaID).
@@ -48,10 +47,8 @@ func (r *gerbongRepo) ListByKereta(keretaID uint) ([]models.Gerbong, error) {
 	return list, nil
 }
 
-// ListByKeretaAndKelas mengembalikan gerbong spesifik untuk kereta dan kelas tertentu
 func (r *gerbongRepo) ListByKeretaAndKelas(keretaID uint, kelas string) ([]models.Gerbong, error) {
 	var list []models.Gerbong
-	// Preload Kursis agar langsung dapat data kursinya
 	if err := r.db.Where("kereta_id = ? AND kelas = ?", keretaID, kelas).
 		Preload("Kursis").
 		Order("nomor_gerbong asc").

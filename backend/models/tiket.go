@@ -2,8 +2,6 @@ package models
 
 import "time"
 
-// Tiket merepresentasikan tiket yang di-issue untuk tiap penumpang setelah pembayaran sukses.
-// Nama file: models/tiket.go
 type Tiket struct {
 	ID          uint `gorm:"primaryKey" json:"id"`
 	BookingID   uint `gorm:"index;not null" json:"booking_id"`

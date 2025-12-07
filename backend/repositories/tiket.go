@@ -45,10 +45,6 @@ func (r *TiketRepo) GetByBookingID(bookingID uint) ([]models.Tiket, error) {
 
 func (r *TiketRepo) GetByUserID(userID uint) ([]models.Tiket, error) {
 	var t []models.Tiket
-	/*
-	   JOIN:
-	   tiket -> booking -> user_id
-	*/
 	err := r.db.
 		Joins("JOIN bookings ON bookings.id = tiket.booking_id").
 		Where("bookings.user_id = ?", userID).

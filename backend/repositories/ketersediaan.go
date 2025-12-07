@@ -10,16 +10,9 @@ import (
 )
 
 type KetersediaanRepo interface {
-	// Ambil dan kunci baris KetersediaanKursi untuk seatIDs pada schedule tertentu (harus dipanggil di dalam tx)
 	FindAndLockBySchedule(tx *gorm.DB, scheduleID uint, seatIDs []uint) ([]models.KetersediaanKursi, error)
-
-	// Tandai ketersediaan sebagai reserved (menggunakan tx)
 	MarkReserved(tx *gorm.DB, inventoryIDs []uint, bookingID uint) error
-
-	// Melepaskan semua ketersediaan kursi yang di-reserved oleh booking tertentu
 	ReleaseByBooking(tx *gorm.DB, bookingID uint) error
-
-	// Ambil semua data KetersediaanKursi untuk schedule tertentu
 	GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error)
 }
 
@@ -39,7 +32,6 @@ func (r *ketersediaanRepo) FindAndLockBySchedule(tx *gorm.DB, scheduleID uint, s
 		return nil, err
 	}
 
-	// Jika jumlah tidak sama, berarti ada yang belum ada record-nya (lazy init)
 	if len(inv) != len(seatIDs) {
 		existingMap := make(map[uint]bool)
 		for _, item := range inv {
@@ -79,11 +71,8 @@ func (r *ketersediaanRepo) MarkReserved(tx *gorm.DB, inventoryIDs []uint, bookin
 		}).Error
 }
 
-// ReleaseByBooking: melepaskan semua ketersediaan kursi yang di-reserved oleh booking tertentu
-// Men-set status='available', reserved_by_booking=0, reserved_until=NULL, updated_at = now
 func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 	now := time.Now()
-	// Hapus filter status='reserved' agar bisa release status='booked' juga
 	res := tx.Model(&models.KetersediaanKursi{}).
 		Where("reserved_by_booking = ?", bookingID).
 		UpdateColumns(map[string]interface{}{
@@ -97,7 +86,8 @@ func (r *ketersediaanRepo) ReleaseByBooking(tx *gorm.DB, bookingID uint) error {
 		return res.Error
 	}
 	return nil
-} // GetBySchedule mengambil semua data ketersediaan untuk jadwal tertentu (tanpa locking)
+}
+
 func (r *ketersediaanRepo) GetBySchedule(scheduleID uint) ([]models.KetersediaanKursi, error) {
 	var list []models.KetersediaanKursi
 	if err := r.db.Where("train_schedule_id = ?", scheduleID).Find(&list).Error; err != nil {
