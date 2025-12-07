@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
 import { getAllSchedules, getTrains } from '../services/api';
 
-export default function TrainFares({ navigation }) {
+export default function TrainPrice({ navigation }) {
     const [fares, setFares] = useState([]);
     const [loading, setLoading] = useState(true);
 

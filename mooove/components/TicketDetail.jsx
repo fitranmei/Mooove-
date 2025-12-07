@@ -51,7 +51,7 @@ export default function TicketDetail({ route, navigation }) {
         if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return '-';
         
         let diffM = (endH * 60 + endM) - (startH * 60 + startM);
-        if (diffM < 0) diffM += 24 * 60; // Handle overnight
+        if (diffM < 0) diffM += 24 * 60;
         
         const hours = Math.floor(diffM / 60);
         const minutes = diffM % 60;
@@ -82,7 +82,6 @@ export default function TicketDetail({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-             {/* Header */}
             <View style={styles.headerContainer}>
                  <ImageBackground
                     source={require('../assets/images/bg-top.png')} 
@@ -99,7 +98,6 @@ export default function TicketDetail({ route, navigation }) {
             </View>
 
             <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Logo & Code */}
                 <View style={styles.topSection}>
                     <Image source={require('../assets/images/logo-red.png')} style={styles.logo} resizeMode="contain" />
                     <View style={styles.codeContainer}>
@@ -108,16 +106,13 @@ export default function TicketDetail({ route, navigation }) {
                     </View>
                 </View>
 
-                {/* Warning Box */}
                 <View style={styles.warningBox}>
                     <AppText style={styles.warningText}>
                         Anda wajib menunjukan e-boarding pass pada saat boarding dan pemeriksaan di atas kereta
                     </AppText>
                 </View>
 
-                {/* Trip Details Card */}
                 <View style={styles.card}>
-                    {/* Departure */}
                     <View style={styles.tripRow}>
                         <View style={styles.timeCol}>
                             <AppText style={styles.timeText}>{train.departureTime}</AppText>
@@ -132,7 +127,6 @@ export default function TicketDetail({ route, navigation }) {
                         </View>
                     </View>
 
-                    {/* Arrival */}
                     <View style={styles.tripRow}>
                         <View style={styles.timeCol}>
                             <AppText style={styles.timeText}>{train.arrivalTime}</AppText>
@@ -156,7 +150,6 @@ export default function TicketDetail({ route, navigation }) {
                     </View>
                 </View>
 
-                {/* Passengers */}
                 <AppText style={styles.sectionTitle}>Penumpang</AppText>
                 {passengers.map((p, index) => (
                     <View key={index} style={styles.passengerRow}>
@@ -178,7 +171,6 @@ export default function TicketDetail({ route, navigation }) {
                 <View style={{height: 40}} />
             </ScrollView>
 
-            {/* Boarding Pass Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}

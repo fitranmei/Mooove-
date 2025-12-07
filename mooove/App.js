@@ -15,7 +15,7 @@ import PaymentInstruction from './components/PaymentInstruction';
 import TicketDetail from './components/TicketDetail';
 import About from './components/About';
 import TrainSchedule from './components/TrainSchedule';
-import TrainFares from './components/TrainFares';
+import TrainPrice from './components/TrainPrice';
 
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -177,8 +177,8 @@ export default function App() {
         />
 
         <Stack.Screen
-          name="TrainFares"
-          component={TrainFares}
+          name="TrainPrice"
+          component={TrainPrice}
           options={{ headerShown: false }}
         />
 

@@ -117,7 +117,6 @@ export default function BookingForm({ navigation }) {
 
             <View style={styles.contentContainer}>
                 <View style={styles.formCard}>
-                    {/* Origin */}
                     <TouchableOpacity style={styles.inputGroup} onPress={() => openStationModal('origin')}>
                         <View style={styles.iconContainer}>
                             <Ionicons name="train-outline" size={24} color="#F31260" />
@@ -132,7 +131,6 @@ export default function BookingForm({ navigation }) {
                     
                     <View style={styles.divider} />
 
-                    {/* Destination */}
                     <TouchableOpacity style={styles.inputGroup} onPress={() => openStationModal('destination')}>
                         <View style={styles.iconContainer}>
                             <Ionicons name="train-outline" size={24} color="#F31260" />
@@ -145,14 +143,12 @@ export default function BookingForm({ navigation }) {
                         </View>
                     </TouchableOpacity>
 
-                    {/* Swap Button */}
                     <TouchableOpacity style={styles.swapButton} onPress={handleSwap}>
                         <Ionicons name="swap-vertical" size={24} color="#F31260" />
                     </TouchableOpacity>
 
                     <View style={styles.spacer} />
 
-                    {/* Date */}
                     <TouchableOpacity style={styles.inputGroupBorder} onPress={() => setShowDatePicker(true)}>
                         <View style={styles.iconContainer}>
                             <Ionicons name="calendar-outline" size={24} color="#F31260" />
@@ -176,7 +172,6 @@ export default function BookingForm({ navigation }) {
 
                     <View style={styles.spacer} />
 
-                    {/* Passengers */}
                     <View style={styles.inputGroupBorder}>
                         <View style={styles.iconContainer}>
                             <Ionicons name="people-outline" size={24} color="#F31260" />
@@ -195,7 +190,6 @@ export default function BookingForm({ navigation }) {
 
                     <View style={styles.spacerLarge} />
 
-                    {/* Search Button */}
                     <TouchableOpacity 
                         style={[styles.searchButton, (!origin || !destination) && styles.searchButtonDisabled]} 
                         disabled={!origin || !destination}
@@ -220,7 +214,6 @@ export default function BookingForm({ navigation }) {
                 </View>
             </View>
 
-            {/* Station Selection Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}

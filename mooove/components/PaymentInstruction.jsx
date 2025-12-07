@@ -140,7 +140,7 @@ export default function PaymentInstruction({ navigation, route }) {
     useEffect(() => {
         const backAction = () => {
             navigation.navigate('MainApp', { screen: 'home' });
-            return true; // Prevent default behavior
+            return true;
         };
 
         const backHandler = BackHandler.addEventListener(
@@ -230,7 +230,6 @@ export default function PaymentInstruction({ navigation, route }) {
         year: 'numeric'
     });
 
-    // deadline bayar
     let deadline;
     const targetDate = reservedUntilState || reservedUntil;
     
@@ -248,7 +247,6 @@ export default function PaymentInstruction({ navigation, route }) {
         day: 'numeric', month: 'long', year: 'numeric'
     }) + ' ' + deadline.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    // hitung harga total
     const pricePerPassenger = train.price || selectedClass.price || 180000;
     const passengerCount = parseInt(passengers) || 1;
     const totalPrice = pricePerPassenger * passengerCount;
@@ -311,7 +309,7 @@ export default function PaymentInstruction({ navigation, route }) {
             setShowWebView(false);
             setIsPaid(true);
             isPaidRef.current = true;
-            hasShownTimeoutAlert.current = true; // Prevent timeout alert from showing
+            hasShownTimeoutAlert.current = true;
             if (timerRef.current) clearInterval(timerRef.current);
             
             if (bookingId) {
@@ -377,7 +375,7 @@ export default function PaymentInstruction({ navigation, route }) {
                     if (details && (details.Status === 'paid' || details.status === 'paid')) {
                         setIsPaid(true);
                         isPaidRef.current = true;
-                        hasShownTimeoutAlert.current = true; // Prevent timeout alert
+                        hasShownTimeoutAlert.current = true;
                         if (timerRef.current) clearInterval(timerRef.current);
                         
                         setAlertConfig(prev => {
@@ -541,7 +539,6 @@ export default function PaymentInstruction({ navigation, route }) {
                 contentContainerStyle={styles.contentContainer} 
                 showsVerticalScrollIndicator={false}
             >
-                {/* Payment Info Card */}
                 <View style={styles.card}>
                     <View style={styles.deadlineBox}>
                         <AppText style={styles.deadlineLabel}>Selesaikan pembayaran sebelum</AppText>
@@ -555,7 +552,6 @@ export default function PaymentInstruction({ navigation, route }) {
 
                 </View>
 
-                {/* Trip Summary Card */}
                 <View style={styles.card}>
                     <AppText style={styles.routeText}>{origin} {'>'} {destination}</AppText>
                     <View style={styles.trainInfoRow}>
@@ -590,7 +586,6 @@ export default function PaymentInstruction({ navigation, route }) {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* Midtrans WebView Modal */}
             <Modal
                 visible={showWebView}
                 onRequestClose={() => setShowWebView(false)}

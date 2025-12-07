@@ -67,7 +67,6 @@ export default function PassengerData({ navigation, route }) {
             <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 <AppText style={styles.sectionTitle}>Data Penumpang</AppText>
 
-                {/* Trip Summary Card */}
                 <View style={styles.card}>
                     <AppText style={styles.routeText}>{origin} (KPT) {'>'} {destination} (LLG)</AppText>
                     <View style={styles.trainInfoRow}>
@@ -80,7 +79,6 @@ export default function PassengerData({ navigation, route }) {
                     <AppText style={styles.passengerCount}>{passengers} Orang</AppText>
                 </View>
 
-                {/* Booker Account Details Card */}
                 <View style={styles.card}>
                     <AppText style={styles.cardTitle}>Detail Akun Pemesan</AppText>
                     <View style={styles.inputGroup}>
@@ -96,7 +94,6 @@ export default function PassengerData({ navigation, route }) {
                     </View>
                 </View>
 
-                {/* Passenger Slots */}
                 {[...Array(totalPassengers)].map((_, index) => {
                     const passenger = passengerList[index];
                     return (
@@ -153,7 +150,6 @@ export default function PassengerData({ navigation, route }) {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* Add Passenger Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}

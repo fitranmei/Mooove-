@@ -129,7 +129,6 @@ export default function PaymentConfirmation({ navigation, route }) {
                 imageStyle={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
             >
                 <View style={styles.headerContent}>
-                    {/* Back button removed/disabled visually */}
                     <View style={{ width: 28 }} /> 
                     <AppText style={styles.pageTitle}>Pembelian Tiket</AppText>
                 </View>

@@ -19,7 +19,6 @@ export default function Home({ navigation }) {
 
     return (
         <View style={styles.container}>
-            {/* banner di atas menampilkan username, logo */}
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.headerBg}
@@ -32,7 +31,6 @@ export default function Home({ navigation }) {
             </ImageBackground>
 
 
-            {/* option option fitur di home */}
             <ScrollView 
                 showsVerticalScrollIndicator={false} 
                 style={styles.scrollView}
@@ -53,7 +51,7 @@ export default function Home({ navigation }) {
                         <AppText style={styles.titleSmall}>Jadwal Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi jadwal perjalanan kereta</AppText>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.smallOption} onPress={() => navigation.navigate('TrainFares')}>
+                    <TouchableOpacity style={styles.smallOption} onPress={() => navigation.navigate('TrainPrice')}>
                         <Image source={require('../assets/images/home-icon-4.png')} style={styles.smallIcon} />
                         <AppText style={styles.titleSmall}>Tarif Kereta</AppText>
                         <AppText style={styles.subtitleSmall}>Informasi tarif perjalanan kereta</AppText>

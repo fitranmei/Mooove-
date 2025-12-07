@@ -44,24 +44,40 @@ export default function TrainSchedule({ navigation }) {
         setDate(currentDate);
     };
 
-    const filteredSchedules = schedules.filter(item => {
-        const dateSource = item.waktu_berangkat || item.waktuBerangkat || item.tanggal;
-        if (!dateSource) return false;
+    const filteredSchedules = (() => {
+        const filtered = schedules.filter(item => {
+            const dateSource = item.waktu_berangkat || item.waktuBerangkat || item.tanggal;
+            if (!dateSource) return false;
 
-        let itemDateStr = '';
-        if (dateSource.includes('T')) {
-             itemDateStr = dateSource.split('T')[0];
-        } else {
-             itemDateStr = dateSource.split(' ')[0];
-        }
-        
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const selectedDateStr = `${year}-${month}-${day}`;
+            let itemDateStr = '';
+            if (dateSource.includes('T')) {
+                itemDateStr = dateSource.split('T')[0];
+            } else {
+                itemDateStr = dateSource.split(' ')[0];
+            }
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const selectedDateStr = `${year}-${month}-${day}`;
 
-        return itemDateStr === selectedDateStr;
-    });
+            return itemDateStr === selectedDateStr;
+        });
+
+        const grouped = {};
+        filtered.forEach(item => {
+            const trainName = item.kereta?.nama || 'Kereta';
+            const departure = item.waktu_berangkat || item.waktuBerangkat || '';
+            const arrival = item.waktu_tiba || item.waktuTiba || '';
+            const key = `${trainName}-${item.asal_id}-${item.tujuan_id}-${departure}-${arrival}`;
+            
+            if (!grouped[key]) {
+                grouped[key] = item;
+            }
+        });
+
+        return Object.values(grouped);
+    })();
 
     const getStationName = (id, stationObj) => {
         if (stationObj && stationObj.nama) return stationObj.nama;
