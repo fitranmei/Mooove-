@@ -30,7 +30,6 @@ export default function TrainSchedule({ navigation }) {
                 setStations(stationsMap);
                 setSchedules(schedulesData);
             } catch (error) {
-                console.error("Failed to fetch data", error);
             } finally {
                 setLoading(false);
             }

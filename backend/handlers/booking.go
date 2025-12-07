@@ -166,7 +166,16 @@ func (h *BookingHandler) GetBookingByID(c *fiber.Ctx) error {
                 }
         }
 
-        return c.JSON(b)
+        
+        // Populate ReservedUntil from ketersediaan_kursis if pending
+        if b.Status == "pending" {
+                var k models.KetersediaanKursi
+                if err := dbConn.Where("reserved_by_booking = ?", b.ID).Order("reserved_until asc").First(&k).Error; err == nil {
+                        b.ReservedUntil = k.ReservedUntil
+                }
+        }
+
+return c.JSON(b)
 }
 
 // ListBookingsForUser: ambil booking milik user yang login (menggunakan dbConn global)
@@ -189,10 +198,22 @@ func (h *BookingHandler) ListBookingsForUser(c *fiber.Ctx) error {
                 Preload("TrainSchedule.Asal").
                 Preload("TrainSchedule.Tujuan").
                 Where("user_id = ?", uid).
+                Order("created_at desc").
                 Find(&bookings).Error; err != nil {
                 return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
         }
-        return c.JSON(bookings)
+        
+        // Populate ReservedUntil for pending bookings
+        for i := range bookings {
+                if bookings[i].Status == "pending" {
+                        var k models.KetersediaanKursi
+                        if err := dbConn.Where("reserved_by_booking = ?", bookings[i].ID).Order("reserved_until asc").First(&k).Error; err == nil {
+                                bookings[i].ReservedUntil = k.ReservedUntil
+                        }
+                }
+        }
+
+return c.JSON(bookings)
 }
 
 // CreatePaymentForBookingPlaceholder: placeholder (sesuaikan nanti dengan PaymentService)

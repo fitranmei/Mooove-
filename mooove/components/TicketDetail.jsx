@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ImageBackground, TouchableOpacity, ScrollView, Image, Modal, TextInput, Alert, BackHandler } from 'react-native';
+import { View, StyleSheet, ImageBackground, TouchableOpacity, ScrollView, Image, Modal, TextInput, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import AppText from './AppText';
@@ -22,7 +22,45 @@ export default function TicketDetail({ route, navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPassenger, setSelectedPassenger] = useState(null);
 
-    // Handle hardware back button to go Home
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        try {
+            const dateObj = new Date(dateString);
+            if (isNaN(dateObj.getTime())) return dateString; 
+            return dateObj.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    const displayDate = formatDate(date);
+
+    const calculateDuration = (start, end) => {
+        if (!start || !end) return '-';
+        
+        const cleanStart = start.toString().replace('.', ':');
+        const cleanEnd = end.toString().replace('.', ':');
+        
+        const [startH, startM] = cleanStart.split(':').map(Number);
+        const [endH, endM] = cleanEnd.split(':').map(Number);
+        
+        if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return '-';
+        
+        let diffM = (endH * 60 + endM) - (startH * 60 + startM);
+        if (diffM < 0) diffM += 24 * 60; // Handle overnight
+        
+        const hours = Math.floor(diffM / 60);
+        const minutes = diffM % 60;
+        
+        return `${hours}j ${minutes}m`;
+    };
+
+    const duration = calculateDuration(train.departureTime, train.arrivalTime);
+
     useEffect(() => {
         const backAction = () => {
             navigation.navigate('MainApp', { screen: 'home' });
@@ -90,7 +128,7 @@ export default function TicketDetail({ route, navigation }) {
                         </View>
                         <View style={styles.stationCol}>
                             <AppText style={styles.stationText}>{origin}</AppText>
-                            <AppText style={styles.dateText}>{date}</AppText>
+                            <AppText style={styles.dateText}>{displayDate}</AppText>
                         </View>
                     </View>
 
@@ -104,7 +142,7 @@ export default function TicketDetail({ route, navigation }) {
                         </View>
                         <View style={styles.stationCol}>
                             <AppText style={styles.stationText}>{destination}</AppText>
-                            <AppText style={styles.dateText}>{date}</AppText>
+                            <AppText style={styles.dateText}>{displayDate}</AppText>
                         </View>
                     </View>
 
@@ -114,7 +152,7 @@ export default function TicketDetail({ route, navigation }) {
                             <AppText style={styles.trainName}>{train.name}</AppText>
                             <AppText style={styles.trainClass}>{(selectedClass.type || 'EKONOMI').toUpperCase()}</AppText>
                         </View>
-                        <AppText style={styles.duration}>6j 10m</AppText>
+                        <AppText style={styles.duration}>{duration}</AppText>
                     </View>
                 </View>
 

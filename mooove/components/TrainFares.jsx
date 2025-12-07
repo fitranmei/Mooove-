@@ -17,7 +17,6 @@ export default function TrainFares({ navigation }) {
                     getTrains()
                 ]);
                 
-                // Create trains lookup map
                 const trainsMap = {};
                 if (Array.isArray(trainsData)) {
                     trainsData.forEach(train => {
@@ -25,11 +24,9 @@ export default function TrainFares({ navigation }) {
                     });
                 }
 
-                // Process data to group by train and extract unique classes/prices
                 const processedFares = {};
                 
                 schedulesData.forEach(schedule => {
-                    // Get train name from joined object OR lookup map
                     const trainName = schedule.kereta?.nama || trainsMap[schedule.kereta_id];
                     
                     if (!trainName) return;
@@ -42,13 +39,11 @@ export default function TrainFares({ navigation }) {
                         };
                     }
 
-                    // Check if class already exists for this train
                     const className = schedule.kelas ? schedule.kelas.charAt(0).toUpperCase() + schedule.kelas.slice(1) : 'Ekonomi'; 
                     const price = schedule.harga_dasar || schedule.harga;
                     
                     const existingClass = processedFares[trainName].classes.find(c => c.name === className);
                     
-                    // Add class if not exists and price is valid
                     if (!existingClass) {
                         if (price !== null && price !== undefined) {
                             processedFares[trainName].classes.push({
@@ -61,7 +56,6 @@ export default function TrainFares({ navigation }) {
 
                 setFares(Object.values(processedFares));
             } catch (error) {
-                console.error("Failed to fetch fares", error);
             } finally {
                 setLoading(false);
             }

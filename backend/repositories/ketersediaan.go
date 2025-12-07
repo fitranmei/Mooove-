@@ -67,7 +67,7 @@ func (r *ketersediaanRepo) FindAndLockBySchedule(tx *gorm.DB, scheduleID uint, s
 
 func (r *ketersediaanRepo) MarkReserved(tx *gorm.DB, inventoryIDs []uint, bookingID uint) error {
 	now := time.Now()
-	reservedUntil := now.Add(10 * time.Second)
+	reservedUntil := now.Add(1 * time.Minute)
 
 	return tx.Model(&models.KetersediaanKursi{}).
 		Where("id IN ?", inventoryIDs).

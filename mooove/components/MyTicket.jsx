@@ -3,11 +3,13 @@ import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, FlatList, A
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from '@react-navigation/native';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { getUserBookings, cancelBooking } from '../services/api';
 
 export default function MyTicket({ navigation }) {
   const [activeTickets, setActiveTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: () => {} });
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -72,7 +74,20 @@ export default function MyTicket({ navigation }) {
             rawData: {
                 bookingCode: 'BOOK-' + booking.ID,
                 bookingId: booking.ID,
-                reservedUntil: booking.reserved_until || booking.ReservedUntil,
+                reservedUntil: (() => {
+                    if (booking.reserved_until) return booking.reserved_until;
+                    if (booking.ReservedUntil) return booking.ReservedUntil;
+                    
+                    if (booking.reserved_seats && booking.reserved_seats.length > 0) {
+                        return booking.reserved_seats[0].reserved_until;
+                    }
+
+                    const seats = booking.Kursis || booking.Seats || booking.ketersediaan_kursis || [];
+                    if (Array.isArray(seats) && seats.length > 0) {
+                        return seats[0].reserved_until || seats[0].ReservedUntil;
+                    }
+                    return null;
+                })(),
                 train: { 
                     name: kereta.nama, 
                     departureTime: formatTime(schedule.waktu_berangkat), 
@@ -182,34 +197,46 @@ export default function MyTicket({ navigation }) {
       
       setActiveTickets(formatted);
     } catch (error) {
-      console.error("Failed to fetch tickets:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = (bookingId) => {
-    Alert.alert(
-      "Batalkan Tiket",
-      "Apakah Anda yakin ingin membatalkan tiket ini? Kursi akan tersedia kembali.",
-      [
-        { text: "Tidak", style: "cancel" },
-        { 
-          text: "Ya, Batalkan", 
-          onPress: async () => {
+    setAlertConfig({
+        visible: true,
+        title: "Apakah anda yakin ingin membatalkan tiket?",
+        note: "Uang akan masuk ke metode pembayaran anda dalam kurun waktu 2x24 jam.",
+        cancelText: "Batal",
+        confirmText: "Lanjutkan",
+        onCancel: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+        onConfirm: async () => {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
             setLoading(true);
             const result = await cancelBooking(bookingId);
             if (result) {
-              Alert.alert("Sukses", "Tiket berhasil dibatalkan.");
-              fetchActiveTickets(); // Refresh list
+                setAlertConfig({
+                    visible: true,
+                    title: "Tiket berhasil dibatalkan",
+                    icon: "checkmark-circle",
+                    confirmText: "OK",
+                    onConfirm: () => {
+                        setAlertConfig(prev => ({ ...prev, visible: false }));
+                        fetchActiveTickets();
+                    }
+                });
             } else {
-              Alert.alert("Gagal", "Gagal membatalkan tiket.");
-              setLoading(false);
+                setAlertConfig({
+                    visible: true,
+                    title: "Gagal membatalkan tiket",
+                    icon: "close-circle",
+                    confirmText: "OK",
+                    onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+                });
+                setLoading(false);
             }
-          }
         }
-      ]
-    );
+    });
   };
 
   const handlePressTicket = (item) => {
@@ -219,10 +246,13 @@ export default function MyTicket({ navigation }) {
   };
 
   const handlePay = (item) => {
-    navigation.navigate('PaymentInstruction', item.rawData);
+    navigation.push('PaymentInstruction', {
+      ...item.rawData,
+      _timestamp: Date.now()
+    });
   };
 
-  const renderTicket = ({ item }) => (
+    const renderTicket = ({ item }) => (
     <TouchableOpacity 
         activeOpacity={item.rawStatus === 'paid' ? 0.7 : 1} 
         onPress={() => handlePressTicket(item)}
@@ -298,6 +328,17 @@ export default function MyTicket({ navigation }) {
                 <AppText style={styles.pageTitle}>Tiket Saya</AppText>
             </View>
         </ImageBackground>
+
+        <CustomAlert 
+            visible={alertConfig.visible}
+            title={alertConfig.title}
+            note={alertConfig.note}
+            cancelText={alertConfig.cancelText}
+            confirmText={alertConfig.confirmText}
+            icon={alertConfig.icon}
+            onCancel={alertConfig.onCancel}
+            onConfirm={alertConfig.onConfirm}
+        />
 
         <View style={styles.contentContainer}>
 

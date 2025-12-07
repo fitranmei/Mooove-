@@ -177,7 +177,6 @@ export default function TrainList({ navigation, route }) {
                             >
                                 <View>
                                     <AppText style={styles.classType}>{cls.type}</AppText>
-                                    <AppText style={styles.passengers}>{passengers}</AppText>
                                 </View>
                                 <AppText style={styles.price}>{formatCurrency(cls.price)}</AppText>
                             </TouchableOpacity>

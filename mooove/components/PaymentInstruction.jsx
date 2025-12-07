@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard, Modal, ActivityIndicator, BackHandler, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard, Modal, ActivityIndicator, BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import { useIsFocused } from '@react-navigation/native';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { payBooking, updateBookingStatus, getBookingDetails, getScheduleSeats } from '../services/api';
 
 export default function PaymentInstruction({ navigation, route }) {
+    const isFocused = useIsFocused();
     const { bookingId, train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod, reservedUntil } = route.params || {
-        // Mock data
         bookingId: null,
         train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25', price: 180000 },
         selectedClass: { type: 'BISNIS', price: 180000 },
@@ -27,10 +29,9 @@ export default function PaymentInstruction({ navigation, route }) {
     const [reservedUntilState, setReservedUntilState] = useState(reservedUntil);
 
     const calculateTimeLeft = (targetDate) => {
-        if (!targetDate) return 2 * 60 * 60 - 1; // Default 2 hours if not provided
+        if (!targetDate) return null; 
         
         let deadlineTime;
-        // Handle SQL timestamp format "YYYY-MM-DD HH:mm:ss" which might fail on some devices
         if (typeof targetDate === 'string' && targetDate.includes(' ') && !targetDate.includes('T')) {
              deadlineTime = new Date(targetDate.replace(' ', 'T')).getTime();
         } else {
@@ -44,23 +45,43 @@ export default function PaymentInstruction({ navigation, route }) {
 
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(reservedUntil));
     const [isPaid, setIsPaid] = useState(false);
+    const isPaidRef = useRef(isPaid);
+
+    useEffect(() => {
+        isPaidRef.current = isPaid;
+    }, [isPaid]);
+
+    useEffect(() => {
+        if (isPaid) {
+            setAlertConfig(prev => {
+                if (prev.type === 'timeout' || prev.title === 'Waktu Habis') {
+                    return { ...prev, visible: false };
+                }
+                return prev;
+            });
+        }
+    }, [isPaid]);
+
     const [snapUrl, setSnapUrl] = useState(null);
     const [showWebView, setShowWebView] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const showWebViewRef = useRef(showWebView);
 
-    // Fetch fresh booking details on mount to get accurate reserved_until
+    useEffect(() => {
+        showWebViewRef.current = showWebView;
+    }, [showWebView]);
+
+    const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', type: '', onConfirm: () => {}, onCancel: null });
+
     useEffect(() => {
         const fetchDetails = async () => {
             if (bookingId) {
                 try {
                     const details = await getBookingDetails(bookingId);
-                    console.log("Fetched Booking Details:", JSON.stringify(details, null, 2));
                     
                     if (details) {
-                        // 1. Check root level
                         let freshReservedUntil = details.reserved_until || details.ReservedUntil;
 
-                        // 2. Check inside Kursis / ketersediaan_kursis / Seats
                         if (!freshReservedUntil) {
                             const seats = details.Kursis || details.Seats || details.ketersediaan_kursis || details.SeatAvailabilities || [];
                             if (Array.isArray(seats) && seats.length > 0) {
@@ -68,46 +89,54 @@ export default function PaymentInstruction({ navigation, route }) {
                             }
                         }
 
-                        // 3. If still not found, fetch from Schedule Seats (Ketersediaan Kursi table)
-                        if (!freshReservedUntil && details.TrainScheduleID) {
-                            const scheduleId = details.TrainScheduleID;
-                            // Get seat_id from first passenger (handle case sensitivity)
+                        if (!freshReservedUntil) {
+                            const scheduleId = details.TrainScheduleID || details.train_schedule_id || details.JadwalID;
+                            
                             const passengersList = details.Penumpangs || details.penumpangs || [];
                             const firstPassenger = passengersList.length > 0 ? passengersList[0] : null;
-                            const seatId = firstPassenger ? (firstPassenger.seat_id || firstPassenger.SeatId) : null;
+                            
+                            let seatId = null;
+                            if (firstPassenger) {
+                                seatId = firstPassenger.seat_id || firstPassenger.SeatId;
+                                if (!seatId && (firstPassenger.Kursi || firstPassenger.kursi)) {
+                                    const k = firstPassenger.Kursi || firstPassenger.kursi;
+                                    seatId = k.id || k.ID;
+                                }
+                            }
 
                             if (scheduleId && seatId) {
-                                console.log(`Fetching seats for schedule ${scheduleId} to find seat ${seatId}`);
                                 const seatsData = await getScheduleSeats(scheduleId);
-                                // Handle response structure (array or object with data)
-                                const seatsArray = Array.isArray(seatsData) ? seatsData : (seatsData.data || []);
                                 
-                                // Use loose equality (==) to handle string/number mismatch and various ID field names
-                                const seatRecord = seatsArray.find(s => (s.seat_id == seatId) || (s.SeatId == seatId) || (s.id == seatId) || (s.ID == seatId));
-                                if (seatRecord) {
-                                    console.log("Found seat record:", seatRecord);
-                                    freshReservedUntil = seatRecord.reserved_until || seatRecord.ReservedUntil;
+                                if (seatsData && seatsData.gerbongs) {
+                                    for (const gerbong of seatsData.gerbongs) {
+                                        if (gerbong.kursi) {
+                                            const seatRecord = gerbong.kursi.find(s => (s.id == seatId) || (s.ID == seatId) || (s.seat_id == seatId));
+                                            if (seatRecord) {
+                                                freshReservedUntil = seatRecord.reserved_until || seatRecord.ReservedUntil;
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        // 4. Fallback removed as per user request (must use reserved_until)
-
                         if (freshReservedUntil) {
-                            console.log("Found Reserved Until:", freshReservedUntil);
                             setReservedUntilState(freshReservedUntil);
                             setTimeLeft(calculateTimeLeft(freshReservedUntil));
                         }
+
+                        if (details.Status === 'paid' || details.status === 'paid') {
+                            setIsPaid(true);
+                        }
                     }
                 } catch (e) {
-                    console.error("Error in fetchDetails:", e);
                 }
             }
         };
         fetchDetails();
     }, [bookingId]);
 
-    // Handle hardware back button
     useEffect(() => {
         const backAction = () => {
             navigation.navigate('MainApp', { screen: 'home' });
@@ -122,25 +151,65 @@ export default function PaymentInstruction({ navigation, route }) {
         return () => backHandler.remove();
     }, [navigation]);
 
+    const timerRef = useRef(null);
+    const hasShownTimeoutAlert = useRef(false);
+
     useEffect(() => {
-        const timer = setInterval(() => {
+        hasShownTimeoutAlert.current = false;
+        isPaidRef.current = isPaid;
+        
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isFocused || isPaid) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            return;
+        }
+
+        setTimeLeft(calculateTimeLeft(reservedUntilState || reservedUntil));
+
+        timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
+                if (isPaidRef.current) {
+                    if (timerRef.current) clearInterval(timerRef.current);
+                    return prev;
+                }
+
+                if (prev === null) return null;
                 if (prev <= 1) {
-                    clearInterval(timer);
-                    Alert.alert(
-                        "Waktu Habis",
-                        "Waktu pembayaran telah habis. Tiket otomatis dibatalkan.",
-                        [{ text: "OK", onPress: () => navigation.navigate('MainApp', { screen: 'home' }) }]
-                    );
+                    if (timerRef.current) clearInterval(timerRef.current);
+                    
+                    if (!isPaidRef.current && !showWebViewRef.current && !hasShownTimeoutAlert.current) {
+                        hasShownTimeoutAlert.current = true;
+                        setAlertConfig({
+                            visible: true,
+                            title: "Waktu Habis",
+                            note: "Waktu pembayaran telah habis. Tiket otomatis dibatalkan.",
+                            icon: "time-outline",
+                            type: 'timeout',
+                            confirmText: "OK",
+                            onConfirm: () => {
+                                setAlertConfig(prev => ({ ...prev, visible: false }));
+                                navigation.navigate('MainApp', { screen: 'home' });
+                            }
+                        });
+                    }
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
-        return () => clearInterval(timer);
-    }, [navigation]);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [navigation, isPaid, isFocused]);
 
     const formatTime = (seconds) => {
+        if (seconds === null) return { h: '--', m: '--', s: '--' };
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
         const s = seconds % 60;
@@ -188,18 +257,31 @@ export default function PaymentInstruction({ navigation, route }) {
         return `Rp${amount.toLocaleString('id-ID')}`;
     };
 
-    const paymentCode = "202576384759091"; // kode mockup rekening bayar
+    const paymentCode = "202576384759091";
 
     const copyToClipboard = () => {
         Clipboard.setString(paymentCode);
-        alert('Kode pembayaran disalin!');
+        setAlertConfig({
+            visible: true,
+            title: "Disalin",
+            note: "Kode pembayaran berhasil disalin.",
+            icon: "checkmark-circle",
+            confirmText: "OK",
+            onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+        });
     };
 
     const handlePayment = async () => {
         if (!bookingId) {
-            // Fallback for mock data or missing ID
             setIsPaid(true);
-            alert('Simulasi Pembayaran Berhasil (Mock)!');
+            setAlertConfig({
+                visible: true,
+                title: "Berhasil",
+                note: "Simulasi Pembayaran Berhasil (Mock)!",
+                icon: "checkmark-circle",
+                confirmText: "OK",
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
         
@@ -211,7 +293,14 @@ export default function PaymentInstruction({ navigation, route }) {
             setSnapUrl(paymentResult.redirect_url);
             setShowWebView(true);
         } else {
-            alert("Gagal memulai pembayaran.");
+            setAlertConfig({
+                visible: true,
+                title: "Gagal",
+                note: "Gagal memulai pembayaran.",
+                icon: "close-circle",
+                confirmText: "OK",
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
         }
     };
 
@@ -221,53 +310,154 @@ export default function PaymentInstruction({ navigation, route }) {
         if (url.includes('status_code=200') || url.includes('transaction_status=settlement') || url.includes('transaction_status=capture')) {
             setShowWebView(false);
             setIsPaid(true);
+            isPaidRef.current = true;
+            hasShownTimeoutAlert.current = true; // Prevent timeout alert from showing
+            if (timerRef.current) clearInterval(timerRef.current);
             
             if (bookingId) {
                 await updateBookingStatus(bookingId);
             }
 
-            alert("Pembayaran Berhasil!");
-            
-            let passengerList = [];
-            if (allPassengers && allPassengers.length > 0) {
-                passengerList = allPassengers.map((p, i) => ({
-                    name: p.name,
-                    id: p.id,
-                    type: p.type || 'Dewasa',
-                    seat: `${selectedClass.type} ${selectedCarriage || 1} / ${route.params.selectedSeats ? route.params.selectedSeats[i] : selectedSeat}`
-                }));
-            } else if (passengerDetails && Object.keys(passengerDetails).length > 0) {
-                 passengerList = Object.values(passengerDetails).map((p, i) => ({
-                    name: p.name || 'Penumpang',
-                    id: p.idNumber || '-',
-                    type: 'Dewasa',
-                    seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
-                }));
-            } else {
-                passengerList = [{ name: 'Penumpang', id: '-', type: 'Dewasa', seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}` }];
-            }
-
-            navigation.navigate('TicketDetail', {
-                bookingCode: bookingId ? `BOOK-${bookingId}` : 'KJB75AU',
-                train: train || { name: 'Kereta', departureTime: '00:00', arrivalTime: '00:00' },
-                origin: origin || 'Asal',
-                destination: destination || 'Tujuan',
-                date: formattedDate,
-                allPassengers: passengerList,
-                passengers: passengerList,
-                selectedClass: selectedClass || { type: 'Ekonomi' }
+            setAlertConfig({
+                visible: true,
+                title: "Pembayaran Berhasil",
+                note: "Tiket anda telah terbit. Selamat menikmati perjalanan!",
+                icon: "checkmark-circle",
+                type: 'success',
+                confirmText: "Lihat Tiket",
+                onConfirm: () => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    
+                    let passengerList = [];
+                    if (allPassengers && allPassengers.length > 0) {
+                        passengerList = allPassengers.map((p, i) => ({
+                            name: p.name,
+                            id: p.id,
+                            type: p.type || 'Dewasa',
+                            seat: `${selectedClass.type} ${selectedCarriage || 1} / ${route.params.selectedSeats ? route.params.selectedSeats[i] : selectedSeat}`
+                        }));
+                    } else if (passengerDetails && Object.keys(passengerDetails).length > 0) {
+                         passengerList = Object.values(passengerDetails).map((p, i) => ({
+                            name: p.name || 'Penumpang',
+                            id: p.idNumber || '-',
+                            type: 'Dewasa',
+                            seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
+                        }));
+                    } else {
+                        passengerList = [{ name: 'Penumpang', id: '-', type: 'Dewasa', seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}` }];
+                    }
+        
+                    navigation.navigate('TicketDetail', {
+                        bookingCode: bookingId ? `BOOK-${bookingId}` : 'KJB75AU',
+                        train: train || { name: 'Kereta', departureTime: '00:00', arrivalTime: '00:00' },
+                        origin: origin || 'Asal',
+                        destination: destination || 'Tujuan',
+                        date: formattedDate,
+                        allPassengers: passengerList,
+                        passengers: passengerList,
+                        selectedClass: selectedClass || { type: 'Ekonomi' }
+                    });
+                }
             });
+        } else if (url.includes('status_code=202') || url.includes('transaction_status=deny') || url.includes('transaction_status=expire') || url.includes('transaction_status=cancel')) {
+             setShowWebView(false);
         }
         
-        // Handle pending or error if needed
         if (url.includes('status_code=201') || url.includes('transaction_status=pending')) {
-             // Pending
         }
     };
 
+    useEffect(() => {
+        if (!showWebView && bookingId) {
+            const checkStatus = async () => {
+                try {
+                    const isTimeUp = timeLeft <= 0;
+
+                    const details = await getBookingDetails(bookingId);
+                    if (details && (details.Status === 'paid' || details.status === 'paid')) {
+                        setIsPaid(true);
+                        isPaidRef.current = true;
+                        hasShownTimeoutAlert.current = true; // Prevent timeout alert
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        
+                        setAlertConfig(prev => {
+                            if (prev.type === 'success') return prev;
+                            return {
+                                visible: true,
+                                title: "Pembayaran Berhasil",
+                                note: "Tiket anda telah terbit. Selamat menikmati perjalanan!",
+                                icon: "checkmark-circle",
+                                type: 'success',
+                                confirmText: "Lihat Tiket",
+                                onConfirm: () => {
+                                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                                    
+                                    let passengerList = [];
+                                    if (allPassengers && allPassengers.length > 0) {
+                                        passengerList = allPassengers.map((p, i) => ({
+                                            name: p.name,
+                                            id: p.id,
+                                            type: p.type || 'Dewasa',
+                                            seat: `${selectedClass.type} ${selectedCarriage || 1} / ${route.params.selectedSeats ? route.params.selectedSeats[i] : selectedSeat}`
+                                        }));
+                                    } else if (passengerDetails && Object.keys(passengerDetails).length > 0) {
+                                         passengerList = Object.values(passengerDetails).map((p, i) => ({
+                                            name: p.name || 'Penumpang',
+                                            id: p.idNumber || '-',
+                                            type: 'Dewasa',
+                                            seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}`
+                                        }));
+                                    } else {
+                                        passengerList = [{ name: 'Penumpang', id: '-', type: 'Dewasa', seat: `${selectedClass.type} ${selectedCarriage || 1} / ${selectedSeat || 'A'}` }];
+                                    }
+                        
+                                    navigation.navigate('TicketDetail', {
+                                        bookingCode: bookingId ? `BOOK-${bookingId}` : 'KJB75AU',
+                                        train: train || { name: 'Kereta', departureTime: '00:00', arrivalTime: '00:00' },
+                                        origin: origin || 'Asal',
+                                        destination: destination || 'Tujuan',
+                                        date: formattedDate,
+                                        allPassengers: passengerList,
+                                        passengers: passengerList,
+                                        selectedClass: selectedClass || { type: 'Ekonomi' }
+                                    });
+                                }
+                            };
+                        });
+                    } else {
+                        if (isTimeUp && !isPaidRef.current && !hasShownTimeoutAlert.current) {
+                             hasShownTimeoutAlert.current = true;
+                             setAlertConfig({
+                                visible: true,
+                                title: "Waktu Habis",
+                                note: "Waktu pembayaran telah habis. Tiket otomatis dibatalkan.",
+                                icon: "time-outline",
+                                type: 'timeout',
+                                confirmText: "OK",
+                                onConfirm: () => {
+                                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                                    navigation.navigate('MainApp', { screen: 'home' });
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                }
+            };
+            checkStatus();
+        }
+    }, [showWebView]);
+
     const handleViewTicket = () => {
         if (!isPaid) {
-            alert('Mohon selesaikan pembayaran terlebih dahulu dan klik "Cek Pembayaran".');
+            setAlertConfig({
+                visible: true,
+                title: "Belum Lunas",
+                note: 'Mohon selesaikan pembayaran terlebih dahulu dan klik "Cek Pembayaran".',
+                icon: "alert-circle",
+                confirmText: "OK",
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
         
@@ -304,6 +494,16 @@ export default function PaymentInstruction({ navigation, route }) {
 
     return (
         <View style={styles.container}>
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.headerBg}

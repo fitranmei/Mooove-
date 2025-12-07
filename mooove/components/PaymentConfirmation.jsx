@@ -3,6 +3,7 @@ import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Activi
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { createBooking } from '../services/api';
 
 export default function PaymentConfirmation({ navigation, route }) {
@@ -23,11 +24,10 @@ export default function PaymentConfirmation({ navigation, route }) {
 
     const [loading, setLoading] = useState(false);
     const [bookingId, setBookingId] = useState(null);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: null });
 
-    // Disable hardware back button
     useEffect(() => {
         const backAction = () => {
-            // Prevent going back
             return true;
         };
 
@@ -67,22 +67,31 @@ export default function PaymentConfirmation({ navigation, route }) {
             total_harga: totalPrice
         };
 
-        // Validate payload before sending
         if (payload.seat_ids.length !== payload.penumpangs.length) {
             setLoading(false);
-            alert("Data kursi dan penumpang tidak sesuai.");
+            setAlertConfig({
+                visible: true,
+                title: "Kesalahan Data",
+                note: "Data kursi dan penumpang tidak sesuai.",
+                icon: "alert-circle",
+                confirmText: "OK",
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
 
-        console.log("Sending Booking Payload:", JSON.stringify(payload, null, 2));
-
         const booking = await createBooking(payload);
-
-        console.log("Booking Response:", booking);
 
         if (!booking || !booking.booking_id) {
             setLoading(false);
-            alert("Gagal membuat pesanan. Silakan coba lagi.");
+            setAlertConfig({
+                visible: true,
+                title: "Gagal",
+                note: "Gagal membuat pesanan. Silakan coba lagi.",
+                icon: "close-circle",
+                confirmText: "OK",
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
 
@@ -93,7 +102,6 @@ export default function PaymentConfirmation({ navigation, route }) {
             reservedUntil = booking.reserved_seats[0].reserved_until;
         }
 
-        // Navigate to PaymentInstruction immediately
         navigation.navigate('PaymentInstruction', { 
             ...route.params, 
             bookingId: booking.booking_id, 
@@ -105,6 +113,16 @@ export default function PaymentConfirmation({ navigation, route }) {
 
     return (
         <View style={styles.container}>
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.headerBg}

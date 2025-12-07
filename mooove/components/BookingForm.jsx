@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { getStations } from '../services/api';
 
 export default function BookingForm({ navigation }) {
@@ -17,6 +18,7 @@ export default function BookingForm({ navigation }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [activeField, setActiveField] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: null });
 
     useEffect(() => {
         const fetchStations = async () => {
@@ -53,8 +55,30 @@ export default function BookingForm({ navigation }) {
 
     const selectStation = (station) => {
         if (activeField === 'origin') {
+            if (destination && station.id === destination.id) {
+                setAlertConfig({
+                    visible: true,
+                    title: "Kesalahan",
+                    note: "Stasiun keberangkatan dan tujuan tidak boleh sama.",
+                    icon: "alert-circle",
+                    confirmText: "OK",
+                    onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+                });
+                return;
+            }
             setOrigin(station);
         } else {
+            if (origin && station.id === origin.id) {
+                setAlertConfig({
+                    visible: true,
+                    title: "Kesalahan",
+                    note: "Stasiun keberangkatan dan tujuan tidak boleh sama.",
+                    icon: "alert-circle",
+                    confirmText: "OK",
+                    onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+                });
+                return;
+            }
             setDestination(station);
         }
         setModalVisible(false);
@@ -68,6 +92,16 @@ export default function BookingForm({ navigation }) {
 
     return (
         <View style={styles.container}>
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.headerBg}

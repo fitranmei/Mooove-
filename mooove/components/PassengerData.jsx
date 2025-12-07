@@ -7,13 +7,6 @@ import { getUserData } from '../services/authService';
 
 export default function PassengerData({ navigation, route }) {
     const { train, selectedClass, origin, destination, date, passengers } = route.params || {
-        // data mockup
-        train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25' },
-        selectedClass: { type: 'BISNIS' },
-        origin: 'KERTAPATI',
-        destination: 'LUBUK LINGGAU',
-        date: new Date().toISOString(),
-        passengers: '1'
     };
 
     const totalPassengers = parseInt(passengers);
@@ -193,7 +186,11 @@ export default function PassengerData({ navigation, route }) {
                             keyboardType="numeric"
                         />
 
-                        <TouchableOpacity style={styles.saveButton} onPress={handleAddPassenger}>
+                        <TouchableOpacity 
+                            style={[styles.saveButton, (!newPassenger.name || !newPassenger.id) && { opacity: 0.5 }]} 
+                            onPress={handleAddPassenger}
+                            disabled={!newPassenger.name || !newPassenger.id}
+                        >
                             <AppText style={styles.saveButtonText}>Simpan</AppText>
                         </TouchableOpacity>
                     </View>

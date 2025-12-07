@@ -21,7 +21,6 @@ export default function History({ navigation }) {
     setLoading(true);
     const bookings = await getUserBookings();
     
-    // Group by date
     const grouped = {};
     bookings.forEach(booking => {
       const date = new Date(booking.CreatedAt).toLocaleDateString('id-ID', {
@@ -32,11 +31,6 @@ export default function History({ navigation }) {
         grouped[date] = [];
       }
       
-      // Determine train name and route (fallback if not populated)
-      // Note: Backend might need to preload Schedule -> Train/Station
-      // Assuming backend returns nested objects or we map them
-      
-      // For now, use safe access or defaults
       const trainName = booking.TrainSchedule?.kereta?.nama || 'Kereta Api';
       const origin = booking.TrainSchedule?.asal?.kode || 'KPT';
       const destination = booking.TrainSchedule?.tujuan?.kode || 'LLG';
@@ -70,17 +64,34 @@ export default function History({ navigation }) {
 
   const renderTicket = ({ item }) => {
     const isCancelled = item.status === 'Batal';
-    const headerBgColor = isCancelled ? '#EAEAEA' : '#FFC8DD';
-    const statusBadgeBg = isCancelled ? '#FF8A80' : '#C8E6C9';
-    const statusTextColor = isCancelled ? '#D32F2F' : '#2E7D32';
-    const statusText = item.status;
+    const isPending = item.status === 'Menunggu';
+    
+    let headerBgColor = '#FFC8DD';
+    let statusBadgeBg = '#C8E6C9';
+    let statusTextColor = '#2E7D32';
+    let bookingLabelColor = '#000';
+    let bookingCodeColor = '#000';
+
+    if (isCancelled) {
+        headerBgColor = '#EAEAEA';
+        statusBadgeBg = '#FF8A80';
+        statusTextColor = '#D32F2F';
+    } else if (isPending) {
+        headerBgColor = '#F3F0FA';
+        statusBadgeBg = '#D8CCF1';
+        statusTextColor = '#5E35B1';
+        bookingLabelColor = '#5E35B1';
+        bookingCodeColor = '#000';
+    }
+
+    const statusText = item.status === 'Menunggu' ? 'Menunggu Pembayaran' : item.status;
 
     return (
         <View style={styles.ticketCard}>
             <View style={[styles.cardHeader, { backgroundColor: headerBgColor }]}>
                 <View>
-                    <AppText style={styles.bookingLabel}>Kode Pemesanan</AppText>
-                    <AppText style={styles.bookingCode}>{item.bookingCode}</AppText>
+                    <AppText style={[styles.bookingLabel, isPending && { color: bookingLabelColor }]}>Kode Pemesanan</AppText>
+                    <AppText style={[styles.bookingCode, isPending && { color: bookingCodeColor }]}>{item.bookingCode}</AppText>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: statusBadgeBg }]}>
                     <AppText style={[styles.statusText, { color: statusTextColor }]}>{statusText}</AppText>

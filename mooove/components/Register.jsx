@@ -3,6 +3,7 @@ import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, 
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { register } from '../services/authService';
 
 export default function Register({ navigation }) {
@@ -13,26 +14,54 @@ export default function Register({ navigation }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: null });
 
     const handleRegister = async () => {
         if (!fullname || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Mohon isi semua kolom');
+            setAlertConfig({
+                visible: true,
+                title: 'Mohon isi semua kolom',
+                icon: 'alert-circle',
+                confirmText: 'OK',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
 
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Password tidak cocok');
+            setAlertConfig({
+                visible: true,
+                title: 'Password tidak cocok',
+                icon: 'alert-circle',
+                confirmText: 'OK',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
 
         setLoading(true);
         try {
             await register(fullname, email, password);
-            Alert.alert('Sukses', 'Registrasi berhasil! Silahkan login.', [
-                { text: 'OK', onPress: () => navigation.navigate('login') }
-            ]);
+            setAlertConfig({
+                visible: true,
+                title: 'Registrasi Berhasil',
+                note: 'Silahkan login dengan akun baru anda.',
+                icon: 'checkmark-circle',
+                confirmText: 'Login Sekarang',
+                onConfirm: () => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    navigation.navigate('login');
+                }
+            });
         } catch (error) {
-            Alert.alert('Gagal', error.error || 'Terjadi kesalahan saat registrasi');
+            setAlertConfig({
+                visible: true,
+                title: 'Registrasi Gagal',
+                note: error.error || 'Terjadi kesalahan saat registrasi',
+                icon: 'close-circle',
+                confirmText: 'Coba Lagi',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
         } finally {
             setLoading(false);
         }
@@ -40,6 +69,16 @@ export default function Register({ navigation }) {
 
     return (
         <View style={styles.container}>
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.bgimage}

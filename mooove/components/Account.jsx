@@ -3,10 +3,12 @@ import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView } from 
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { getUserData, logout } from '../services/authService';
 
 export default function Account({ navigation }) {
     const [user, setUser] = useState(null);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: null });
 
     useEffect(() => {
         const loadUser = async () => {
@@ -19,17 +21,27 @@ export default function Account({ navigation }) {
     }, []);
 
     const handleLogout = async () => {
-        await logout();
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'login' }],
+        setAlertConfig({
+            visible: true,
+            title: 'Apakah anda yakin ingin keluar?',
+            note: 'Anda harus login kembali untuk mengakses akun anda.',
+            icon: 'log-out-outline',
+            cancelText: 'Batal',
+            confirmText: 'Keluar',
+            onCancel: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+            onConfirm: async () => {
+                setAlertConfig(prev => ({ ...prev, visible: false }));
+                await logout();
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'login' }],
+                });
+            }
         });
     };
 
     const menuItems = [
-        { id: 1, title: 'Pusat Bantuan', icon: 'help', target: null },
-        { id: 2, title: 'Bahasa', icon: 'language', target: null },
-        { id: 3, title: 'Log Out', icon: 'log-out-outline', action: handleLogout },
+        { id: 1, title: 'Log Out', icon: 'log-out-outline', action: handleLogout },
     ];
 
     return (
@@ -43,6 +55,17 @@ export default function Account({ navigation }) {
                     <AppText style={styles.pageTitle}>Akun Saya</AppText>
                 </View>
             </ImageBackground>
+
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
 
             <View style={styles.contentContainer}>
                 <View style={styles.userCard}>

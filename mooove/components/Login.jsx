@@ -3,6 +3,7 @@ import { View, ImageBackground, TouchableOpacity, Image, StyleSheet, TextInput, 
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AppText from './AppText';
+import CustomAlert from './CustomAlert';
 import { login } from '../services/authService';
 
 export default function Login({ navigation }) {
@@ -10,10 +11,17 @@ export default function Login({ navigation }) {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', note: '', onConfirm: () => {}, onCancel: null });
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Mohon isi email dan password');
+            setAlertConfig({
+                visible: true,
+                title: 'Mohon isi email dan password',
+                icon: 'alert-circle',
+                confirmText: 'OK',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
             return;
         }
 
@@ -22,7 +30,14 @@ export default function Login({ navigation }) {
             await login(email, password);
             navigation.navigate('MainApp');
         } catch (error) {
-            Alert.alert('Gagal', error.error || 'Email atau password salah');
+            setAlertConfig({
+                visible: true,
+                title: 'Login Gagal',
+                note: error.error || 'Email atau password salah',
+                icon: 'close-circle',
+                confirmText: 'Coba Lagi',
+                onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false }))
+            });
         } finally {
             setLoading(false);
         }
@@ -30,6 +45,16 @@ export default function Login({ navigation }) {
 
     return (
         <View style={styles.container}>
+            <CustomAlert 
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                note={alertConfig.note}
+                cancelText={alertConfig.cancelText}
+                confirmText={alertConfig.confirmText}
+                icon={alertConfig.icon}
+                onCancel={alertConfig.onCancel}
+                onConfirm={alertConfig.onConfirm}
+            />
             <ImageBackground
                 source={require('../assets/images/bg-top.png')}
                 style={styles.bgimage}

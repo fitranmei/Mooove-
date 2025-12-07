@@ -34,11 +34,9 @@ export default function SeatSelection({ navigation, route }) {
 
     const columns = ['A', 'B', 'C', 'D'];
 
-    // Fetch All Data (Schedule + Carriages + Seats)
     useEffect(() => {
         const fetchData = async () => {
             if (!selectedClass.scheduleId) {
-                // Fallback for testing/mock
                 setCarriages([{id: 1, nomor_gerbong: 1, kelas: 'Eksekutif'}]);
                 setSelectedCarriage(1);
                 setLoading(false);
@@ -60,7 +58,6 @@ export default function SeatSelection({ navigation, route }) {
         fetchData();
     }, [selectedClass.scheduleId]);
 
-    // Update grid when selectedCarriage changes
     useEffect(() => {
         if (!selectedCarriage || !allData) return;
 
@@ -69,19 +66,16 @@ export default function SeatSelection({ navigation, route }) {
 
         const carriageSeats = currentCarriage.kursi || [];
         
-        // Calculate max row from data
         let maxRow = 0;
         carriageSeats.forEach(s => {
-             // Assuming nomor_kursi is like "1A", "10B"
              const match = s.nomor_kursi.match(/^(\d+)[A-Z]$/);
              if (match) {
                  const r = parseInt(match[1]);
                  if (r > maxRow) maxRow = r;
              }
         });
-        if (maxRow === 0) maxRow = 15; // Fallback
+        if (maxRow === 0) maxRow = 15;
 
-        // Transform to grid: [{ row: 1, seats: [0, 1, 0, 0] }, ...]
         const grid = [];
 
         for (let r = 1; r <= maxRow; r++) {
@@ -99,7 +93,6 @@ export default function SeatSelection({ navigation, route }) {
                 }
             });
             
-            // Only add row if it has at least one real seat
             if (rowSeats.some(s => s !== 2)) {
                  grid.push({ row: r, seats: rowSeats.map(s => s === 2 ? 0 : s) });
             }
@@ -256,7 +249,6 @@ export default function SeatSelection({ navigation, route }) {
                 ]} 
                 disabled={selectedSeats.length !== totalPassengers}
                 onPress={() => {
-                    // Map selected seat numbers to IDs
                     let selectedSeatIds = [];
                     if (allData && allData.gerbongs) {
                          const currentCarriageData = allData.gerbongs.find(g => g.id === selectedCarriage);
