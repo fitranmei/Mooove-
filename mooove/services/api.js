@@ -2,12 +2,21 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = Platform.OS === 'android' 
-    ? process.env.EXPO_PUBLIC_API_URL_ANDROID 
-    : process.env.EXPO_PUBLIC_API_URL_LOCAL;
+const getBaseUrl = () => {
+    switch (Platform.OS) {
+        case 'android':
+            return process.env.EXPO_PUBLIC_API_URL_ANDROID || 'http://10.0.2.2:8080';
+        case 'ios':
+            return process.env.EXPO_PUBLIC_API_URL_IOS || 'http://localhost:8080';
+        case 'web':
+            return process.env.EXPO_PUBLIC_API_URL_WEB || 'http://localhost:8080';
+        default:
+            return process.env.EXPO_PUBLIC_API_URL_LOCAL || 'http://localhost:8080';
+    }
+};
 
 const api = axios.create({
-    baseURL: BASE_URL || 'http://10.0.2.2:8080',
+    baseURL: getBaseUrl(),
     headers: {
         'Content-Type': 'application/json',
     },

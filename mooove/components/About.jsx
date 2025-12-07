@@ -6,11 +6,11 @@ import AppText from './AppText';
 
 export default function About({ navigation }) {
     const teamMembers = [
-        { name: 'Andreas Calvin'},
-        { name: 'Charlistio Aditirta Wijaya'},
-        { name: 'Fitran Husein'},
-        { name: 'Mevika Vania'},
-        { name: 'Stanley Gilbert Lionardi'},
+        { name: 'Andreas Calvin', image: require('../assets/images/andreas-char.jpg') },
+        { name: 'Charlistio Aditirta Wijaya', image: require('../assets/images/charlistio-char.jpg') },
+        { name: 'Fitran Husein', image: require('../assets/images/fitran-char.jpg') },
+        { name: 'Mevika Vania', image: require('../assets/images/mevika-char.jpg') },
+        { name: 'Stanley Gilbert Lionardi', image: require('../assets/images/stanley-char.jpg') },
     ];
 
     return (
@@ -53,7 +53,11 @@ export default function About({ navigation }) {
                         {teamMembers.map((member, index) => (
                             <View key={index} style={styles.teamCard}>
                                 <View style={styles.avatarContainer}>
-                                    <Ionicons name="person" size={24} color="#FFF" />
+                                    {member.image ? (
+                                        <Image source={member.image} style={styles.avatarImage} />
+                                    ) : (
+                                        <Ionicons name="person" size={24} color="#FFF" />
+                                    )}
                                 </View>
                                 <AppText style={styles.memberName}>{member.name}</AppText>
                             </View>
@@ -181,6 +185,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
     },
     memberName: {
         fontFamily: 'PlusJakartaSans_700Bold',
