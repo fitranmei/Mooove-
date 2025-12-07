@@ -137,6 +137,16 @@ export const getUserBookings = async () => {
     }
 };
 
+export const getBookingDetails = async (bookingId) => {
+    try {
+        const response = await api.get(`/bookings/${bookingId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching booking details:", error);
+        return null;
+    }
+};
+
 export const cancelBooking = async (bookingId) => {
     try {
         const response = await api.delete(`/bookings/${bookingId}`);

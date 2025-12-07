@@ -88,11 +88,17 @@ export default function PaymentConfirmation({ navigation, route }) {
 
         setBookingId(booking.booking_id);
 
+        let reservedUntil = booking.reserved_until || booking.ReservedUntil;
+        if (!reservedUntil && booking.reserved_seats && booking.reserved_seats.length > 0) {
+            reservedUntil = booking.reserved_seats[0].reserved_until;
+        }
+
         // Navigate to PaymentInstruction immediately
         navigation.navigate('PaymentInstruction', { 
             ...route.params, 
             bookingId: booking.booking_id, 
-            status: 'pending' 
+            status: 'pending',
+            reservedUntil: reservedUntil
         });
         setLoading(false);
     };

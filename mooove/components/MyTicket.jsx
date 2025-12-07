@@ -72,6 +72,7 @@ export default function MyTicket({ navigation }) {
             rawData: {
                 bookingCode: 'BOOK-' + booking.ID,
                 bookingId: booking.ID,
+                reservedUntil: booking.reserved_until || booking.ReservedUntil,
                 train: { 
                     name: kereta.nama, 
                     departureTime: formatTime(schedule.waktu_berangkat), 

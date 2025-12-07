@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard, Modal, ActivityIndicator, BackHandler } from 'react-native';
+import { View, ImageBackground, TouchableOpacity, StyleSheet, ScrollView, Clipboard, Modal, ActivityIndicator, BackHandler, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import AppText from './AppText';
-import { payBooking, updateBookingStatus } from '../services/api';
+import { payBooking, updateBookingStatus, getBookingDetails, getScheduleSeats } from '../services/api';
 
 export default function PaymentInstruction({ navigation, route }) {
-    const { bookingId, train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod } = route.params || {
+    const { bookingId, train, selectedClass, origin, destination, date, passengers, passengerDetails, allPassengers, selectedSeat, selectedCarriage, selectedPaymentMethod, reservedUntil } = route.params || {
         // Mock data
         bookingId: null,
         train: { name: 'SINDANG MARGA S1', departureTime: '20:15', arrivalTime: '02:25', price: 180000 },
@@ -20,14 +20,92 @@ export default function PaymentInstruction({ navigation, route }) {
         allPassengers: [],
         selectedSeat: '2D',
         selectedCarriage: 'Bisnis 1',
-        selectedPaymentMethod: { name: 'BANK BCA', icon: 'card-outline' }
+        selectedPaymentMethod: { name: 'BANK BCA', icon: 'card-outline' },
+        reservedUntil: null
     };
 
-    const [timeLeft, setTimeLeft] = useState(2 * 60 * 60 - 1); // 2 hours in seconds
+    const [reservedUntilState, setReservedUntilState] = useState(reservedUntil);
+
+    const calculateTimeLeft = (targetDate) => {
+        if (!targetDate) return 2 * 60 * 60 - 1; // Default 2 hours if not provided
+        
+        let deadlineTime;
+        // Handle SQL timestamp format "YYYY-MM-DD HH:mm:ss" which might fail on some devices
+        if (typeof targetDate === 'string' && targetDate.includes(' ') && !targetDate.includes('T')) {
+             deadlineTime = new Date(targetDate.replace(' ', 'T')).getTime();
+        } else {
+             deadlineTime = new Date(targetDate).getTime();
+        }
+
+        const now = new Date().getTime();
+        const diff = Math.floor((deadlineTime - now) / 1000);
+        return diff > 0 ? diff : 0;
+    };
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(reservedUntil));
     const [isPaid, setIsPaid] = useState(false);
     const [snapUrl, setSnapUrl] = useState(null);
     const [showWebView, setShowWebView] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Fetch fresh booking details on mount to get accurate reserved_until
+    useEffect(() => {
+        const fetchDetails = async () => {
+            if (bookingId) {
+                try {
+                    const details = await getBookingDetails(bookingId);
+                    console.log("Fetched Booking Details:", JSON.stringify(details, null, 2));
+                    
+                    if (details) {
+                        // 1. Check root level
+                        let freshReservedUntil = details.reserved_until || details.ReservedUntil;
+
+                        // 2. Check inside Kursis / ketersediaan_kursis / Seats
+                        if (!freshReservedUntil) {
+                            const seats = details.Kursis || details.Seats || details.ketersediaan_kursis || details.SeatAvailabilities || [];
+                            if (Array.isArray(seats) && seats.length > 0) {
+                                freshReservedUntil = seats[0].reserved_until || seats[0].ReservedUntil;
+                            }
+                        }
+
+                        // 3. If still not found, fetch from Schedule Seats (Ketersediaan Kursi table)
+                        if (!freshReservedUntil && details.TrainScheduleID) {
+                            const scheduleId = details.TrainScheduleID;
+                            // Get seat_id from first passenger (handle case sensitivity)
+                            const passengersList = details.Penumpangs || details.penumpangs || [];
+                            const firstPassenger = passengersList.length > 0 ? passengersList[0] : null;
+                            const seatId = firstPassenger ? (firstPassenger.seat_id || firstPassenger.SeatId) : null;
+
+                            if (scheduleId && seatId) {
+                                console.log(`Fetching seats for schedule ${scheduleId} to find seat ${seatId}`);
+                                const seatsData = await getScheduleSeats(scheduleId);
+                                // Handle response structure (array or object with data)
+                                const seatsArray = Array.isArray(seatsData) ? seatsData : (seatsData.data || []);
+                                
+                                // Use loose equality (==) to handle string/number mismatch and various ID field names
+                                const seatRecord = seatsArray.find(s => (s.seat_id == seatId) || (s.SeatId == seatId) || (s.id == seatId) || (s.ID == seatId));
+                                if (seatRecord) {
+                                    console.log("Found seat record:", seatRecord);
+                                    freshReservedUntil = seatRecord.reserved_until || seatRecord.ReservedUntil;
+                                }
+                            }
+                        }
+
+                        // 4. Fallback removed as per user request (must use reserved_until)
+
+                        if (freshReservedUntil) {
+                            console.log("Found Reserved Until:", freshReservedUntil);
+                            setReservedUntilState(freshReservedUntil);
+                            setTimeLeft(calculateTimeLeft(freshReservedUntil));
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error in fetchDetails:", e);
+                }
+            }
+        };
+        fetchDetails();
+    }, [bookingId]);
 
     // Handle hardware back button
     useEffect(() => {
@@ -46,10 +124,21 @@ export default function PaymentInstruction({ navigation, route }) {
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    Alert.alert(
+                        "Waktu Habis",
+                        "Waktu pembayaran telah habis. Tiket otomatis dibatalkan.",
+                        [{ text: "OK", onPress: () => navigation.navigate('MainApp', { screen: 'home' }) }]
+                    );
+                    return 0;
+                }
+                return prev - 1;
+            });
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [navigation]);
 
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600);
@@ -72,9 +161,20 @@ export default function PaymentInstruction({ navigation, route }) {
         year: 'numeric'
     });
 
-    // deadline bayar 2 jam
-    const deadline = new Date();
-    deadline.setHours(deadline.getHours() + 2);
+    // deadline bayar
+    let deadline;
+    const targetDate = reservedUntilState || reservedUntil;
+    
+    if (targetDate) {
+        if (typeof targetDate === 'string' && targetDate.includes(' ') && !targetDate.includes('T')) {
+             deadline = new Date(targetDate.replace(' ', 'T'));
+        } else {
+             deadline = new Date(targetDate);
+        }
+    } else {
+        deadline = new Date(new Date().getTime() + 2 * 60 * 60 * 1000);
+    }
+
     const deadlineString = deadline.toLocaleDateString('id-ID', {
         day: 'numeric', month: 'long', year: 'numeric'
     }) + ' ' + deadline.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });

@@ -10,6 +10,7 @@ type Booking struct {
 	Status          string `gorm:"type:enum('pending','paid','cancelled','expired');default:'pending'"`
 	TotalPrice      int64
 	Penumpangs      []Penumpang `gorm:"foreignKey:BookingID"`
+	ReservedUntil   *time.Time  `json:"reserved_until" gorm:"-"`
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

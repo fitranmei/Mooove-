@@ -30,21 +30,69 @@ func StartReservedCleanup(ctx context.Context, db *gorm.DB, interval time.Durati
 // cleanupOnce melakukan 1 kali update: ubah status reserved -> available
 // untuk semua baris yang reserved_until < NOW()
 func cleanupOnce(db *gorm.DB) {
-	result := db.Model(&models.KetersediaanKursi{}).
-		Where("status = ? AND reserved_until IS NOT NULL AND reserved_until < ?", "reserved", time.Now()).
+
+	now := time.Now()
+
+	// ==========================
+	// 1. RELEASE KURSI EXPIRED
+	// ==========================
+	res := db.Model(&models.KetersediaanKursi{}).
+		Where("status = ? AND reserved_until IS NOT NULL AND reserved_until < ?", "reserved", now).
 		Updates(map[string]interface{}{
 			"status":              "available",
 			"reserved_by_booking": 0,
 			"reserved_until":      gorm.Expr("NULL"),
-			"updated_at":          time.Now(),
+			"updated_at":          now,
 		})
 
-	if result.Error != nil {
-		log.Printf("[cleanup] gagal menjalankan cleanup: %v", result.Error)
+	if res.Error != nil {
+		log.Printf("[cleanup] gagal cleanup kursi: %v", res.Error)
+		return
+	}
+	if res.RowsAffected > 0 {
+		log.Printf("[cleanup] me-release %d kursi expired", res.RowsAffected)
+	}
+
+	// ==========================
+	// 2. CANCEL BOOKING EXPIRED
+	// ==========================
+
+	// Ambil semua booking pending
+	var pendingBookings []models.Booking
+	if err := db.Where("status = ?", "pending").Find(&pendingBookings).Error; err != nil {
+		log.Printf("[cleanup] gagal mengambil booking pending: %v", err)
 		return
 	}
 
-	if result.RowsAffected > 0 {
-		log.Printf("[cleanup] reclaim %d kursi kadaluarsa", result.RowsAffected)
+	for _, b := range pendingBookings {
+
+		// Cek apakah booking masih punya kursi reserved
+		var countReserved int64
+		err := db.Model(&models.KetersediaanKursi{}).
+			Where("reserved_by_booking = ?", b.ID).
+			Where("status = ?", "reserved").
+			Count(&countReserved).Error
+
+		if err != nil {
+			log.Printf("[cleanup] gagal cek kursi booking %d: %v", b.ID, err)
+			continue
+		}
+
+		// Jika tidak ada kursi reserved = booking expired → CANCEL
+		if countReserved == 0 {
+			err := db.Model(&models.Booking{}).
+				Where("id = ? AND status = ?", b.ID, "pending").
+				Updates(map[string]interface{}{
+					"status":     "cancelled",
+					"updated_at": now,
+				}).Error
+
+			if err != nil {
+				log.Printf("[cleanup] gagal cancel booking %d: %v", b.ID, err)
+				continue
+			}
+
+			log.Printf("[cleanup] booking %d otomatis dibatalkan (kursi expired)", b.ID)
+		}
 	}
 }
